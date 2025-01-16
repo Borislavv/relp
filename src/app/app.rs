@@ -23,6 +23,8 @@ impl App {
     }
 
     fn boot(cfg: &Cfg) -> Self {
+        env_logger::init();
+
         let token = cfg.token.clone();
         let frequency = cfg.poll_frequency.clone();
         let frequency_cloned = frequency.clone();
@@ -36,7 +38,7 @@ impl App {
         ));
 
         let provider: Box<dyn message::provider::Provider> = Box::new(
-            message::poller::LongPoller::new(None, frequency_cloned, telegram_facade.clone())
+            message::poller::LongPoller::new(frequency_cloned, telegram_facade.clone())
         );
 
         let consumer: Box<dyn message::consumer::Consumer> = Box::new(

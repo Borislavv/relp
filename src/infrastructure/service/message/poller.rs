@@ -1,51 +1,77 @@
-use std::sync::{mpsc, Arc};
-use std::sync::atomic::{AtomicI64, Ordering};
+use log::error;
+use std::rc::Rc;
+use std::cell::RefCell;
 use std::time::Duration;
 use integration::telegram;
+use std::sync::{mpsc, Arc};
 use crate::infrastructure::integration;
 use integration::telegram::dto::Message;
 
 // Poller is a provider part for "provider-consumer" pattern.
 pub trait Poller {
-    fn poll(&mut self, out: mpsc::Sender<Message>);
+    fn poll(&self, out: mpsc::Sender<Message>);
 }
 
 pub struct LongPoller {
-    offset: AtomicI64,
     freq: Duration,
     telegram: Arc<Box<dyn telegram::facade::FacadeTrait>>
 }
 impl LongPoller {
     pub fn new(
-        offset: Option<i64>,
         freq: Duration,
         telegram: Arc<Box<dyn telegram::facade::FacadeTrait>>
     ) -> Self {
-        let offset: AtomicI64 = AtomicI64::new(offset.unwrap_or(0));
-        LongPoller { offset, freq, telegram }
+        LongPoller { freq, telegram }
+    }
+}
+impl LongPoller {
+    // returns a new offset (a last msg id + 1)
+    fn offset(&self) -> i64 {
+        let response = self.telegram.get_updates(0).unwrap();
+
+        let offset: i64;
+        if let Some(l) = response.result.last() {
+            offset = l.update_id + 1;
+        } else {
+            offset = 0;
+        }
+
+        offset
     }
 }
 impl Poller for LongPoller {
-    fn poll(&mut self, out: mpsc::Sender<Message>) {
+    fn poll(&self, out: mpsc::Sender<Message>) {
+        let offset = Rc::new(RefCell::new(self.offset()));
+
         loop {
-            match self.telegram.get_updates(self.offset.load(Ordering::SeqCst)) {
+            let offset_cloned = offset.clone();
+            match self.telegram.get_updates(offset.clone().borrow().abs()) {
                 Ok(r) => {
                     for u in r.result {
                         let msg: Message = if u.message.is_some() {
-                            u.message.unwrap()
+                            let Some(m) = u.message else {
+                                panic!("Logic error, must not be here due to message already is Some.")
+                            };
+                            m
                         } else if u.edited_message.is_some() {
-                            u.edited_message.unwrap()
+                            let Some(m) = u.edited_message else {
+                                panic!("Logic error, must not be here due to edited_message already is Some.")
+                            };
+                            m
                         } else {
-                            panic!("Another one unknown message type. \
-                            Dump the json and check what's new up there.")
+                            let json = serde_json::to_string(&u).unwrap();
+                            error!("Another one unknown message type. \
+                            Dump the json and check what's new up there. Data: {}", json);
+                            continue;
                         };
 
                         out.send(msg).unwrap();
-                        self.offset.store(u.update_id + 1, Ordering::SeqCst);
+                        let mut offset_borrowed = offset_cloned.borrow_mut();
+                        *offset_borrowed = u.update_id + 1
                     }
                 },
                 Err(e) => {
-                    println!("Error getting updates: {}", e);
+                    error!("Error getting updates: {}", e);
                 }
             }
 

@@ -1,9 +1,10 @@
+use std::panic::RefUnwindSafe;
 use reqwest::Error;
 use integration::telegram;
 use crate::infrastructure::integration;
 use integration::telegram::dto::{GetUpdatesResponse, SendMessageResponse};
 
-pub trait FacadeTrait: telegram::service::ServiceTrait + Send + Sync {}
+pub trait FacadeTrait: telegram::service::ServiceTrait + Send + Sync + RefUnwindSafe {}
 
 pub struct Facade {
     service: Box<dyn telegram::service::ServiceTrait>,

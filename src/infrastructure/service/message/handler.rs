@@ -1,6 +1,6 @@
+use log::error;
 use std::sync::Arc;
 use service::command;
-use log::{log, Level};
 use crate::app::cfg::Cfg;
 use integration::telegram;
 use crate::infrastructure::service;
@@ -33,6 +33,7 @@ impl Handler for MessageHandler {
     fn handle(&self, msg: Message) {
         let binding_test = msg.text.clone();
         let text = binding_test.as_str();
+
         let cmd = self.builder.build(msg);
         let exit = self.processor.process(cmd);
 
@@ -52,7 +53,7 @@ impl Handler for MessageHandler {
         match resp {
             Ok(_) => (),
             Err(e) => {
-                log!(Level::Error, "Error sending message: {}", e);
+                error!("Error sending message: {}", e);
             }
         }
     }

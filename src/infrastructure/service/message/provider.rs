@@ -1,3 +1,5 @@
+use std::panic;
+use log::error;
 use std::sync::mpsc::Sender;
 use crate::infrastructure::service;
 use crate::infrastructure::integration;
@@ -10,6 +12,19 @@ pub trait Provider: Send {
 
 impl Provider for LongPoller {
     fn provide(&mut self, ch: Sender<Message>) {
-        self.poll(ch);
+        let state = panic::catch_unwind(|| {
+            self.poll(ch.clone());
+        });
+
+        match state {
+            Ok(_) => (),
+            Err(e) => {
+                if let Some(e) = e.downcast_ref::<&str>() {
+                    error!("Poll error: {}. Rerunning right now...", e);
+                }
+
+                self.provide(ch.clone())
+            }
+        }
     }
 }

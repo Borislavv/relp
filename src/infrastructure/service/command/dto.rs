@@ -3,6 +3,7 @@ use crate::infrastructure::service::command::enums::Type;
 
 const DATE_FORMAT: &str = "%Y-%m-%d %H:%M:%S";
 
+#[derive(Debug)]
 pub struct Command {
     pub str: String,
     pub r#type: Type,

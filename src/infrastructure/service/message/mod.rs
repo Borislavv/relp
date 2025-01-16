@@ -3,3 +3,4 @@ pub mod consumer;
 pub mod provider;
 pub mod handler;
 pub mod facade;
+mod error;

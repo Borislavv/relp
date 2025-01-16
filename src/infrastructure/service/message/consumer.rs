@@ -1,6 +1,9 @@
+use std::panic;
 use service::message;
 use integration::telegram;
 use std::sync::mpsc::Receiver;
+use log::error;
+use reqwest::Error;
 use crate::infrastructure::service;
 use crate::infrastructure::integration;
 
@@ -20,8 +23,8 @@ impl MessageConsumer {
 
 impl Consumer for MessageConsumer {
     fn consume(&self, r#in: Receiver<telegram::dto::Message>) {
-        for msg in r#in.iter() {
-            self.handler.handle(msg);
+        for msg in r#in {
+            self.handler.handle(msg).expect("Handling msg failed.");
         }
     }
 }

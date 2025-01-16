@@ -1,6 +1,6 @@
 use crate::infrastructure::service;
 use crate::infrastructure::integration;
-use std::sync::mpsc::{Receiver, Sender};
+use std::sync::mpsc::{Receiver, Sender, SyncSender};
 use integration::telegram::dto::Message;
 use service::message::consumer::Consumer;
 use service::message::provider::Provider;
@@ -17,7 +17,7 @@ impl MessageFacade {
     }
 }
 impl Provider for MessageFacade {
-    fn provide(&mut self, ch: Sender<Message>) {
+    fn provide(&mut self, ch: SyncSender<Message>) {
         self.provider.provide(ch);
     }
 }

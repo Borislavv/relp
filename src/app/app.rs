@@ -65,7 +65,7 @@ impl Kernel for App {
             return Err(NotBootedKernelError::new().into());
         }
 
-        let (s, r) = mpsc::channel();
+        let (s, r) = mpsc::sync_channel(1);
         let provider = self.provider.clone();
         let consumer = self.consumer.clone();
 

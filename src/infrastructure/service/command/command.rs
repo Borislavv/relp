@@ -92,18 +92,11 @@ impl Event {
 impl Executable for Event {
     fn exec(&self, cmd: Command) -> Exit {
         if cmd.str != String::new() {
-            let datetime = match chrono::NaiveDateTime::parse_from_str(
+            let datetime = match service::command::util::parse_date_from_str(
                 cmd.str.clone().as_str(),
-                "%Y-%m-%d %H:%M"
             ) {
                 Ok(date) => date,
-                Err(e) => {
-                    return Exit::new(
-                        1,
-                        "".to_string(),
-                        format!("Failed to parse date. Error: {}.", e).to_string(),
-                    );
-                },
+                Err(_) => return Exit::new(1, "".to_string(), "Failed to parse date.".to_string()),
             };
 
             self.list.lock().unwrap().push(dto::Event::new(cmd.str, datetime));

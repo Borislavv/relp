@@ -1,10 +1,11 @@
+use std::panic;
 use std::sync::{Arc, Mutex};
 use service::command::enums;
 use crate::infrastructure::service;
 use service::command::{command, dto};
 use service::command::dto::{Command, Exit};
 
-pub trait Processor: Send + Sync {
+pub trait Processor: Send + Sync + panic::RefUnwindSafe {
     fn process(&self, cmd: Command) -> Exit;
 }
 

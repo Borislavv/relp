@@ -14,6 +14,7 @@ impl Command {
     }
 }
 
+#[derive(Debug)]
 pub struct Exit {
     pub code: i32,
     pub stdout: String,

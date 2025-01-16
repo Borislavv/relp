@@ -1,5 +1,7 @@
-use log::error;
+use std::panic;
 use std::sync::Arc;
+use log::info;
+use reqwest::Error;
 use service::command;
 use crate::app::cfg::Cfg;
 use integration::telegram;
@@ -7,8 +9,8 @@ use crate::infrastructure::service;
 use crate::infrastructure::integration;
 use integration::telegram::dto::Message;
 
-pub trait Handler: Send {
-    fn handle(&self, msg: Message);
+pub trait Handler: Send + panic::RefUnwindSafe {
+    fn handle(&self, msg: Message) -> Result<(), Error>;
 }
 
 pub struct MessageHandler {
@@ -30,14 +32,19 @@ impl MessageHandler {
 }
 
 impl Handler for MessageHandler {
-    fn handle(&self, msg: Message) {
+    fn handle(&self, msg: Message) -> Result<(), Error> {
         let binding_test = msg.text.clone();
+        let binding_date = msg.text.clone();
+
         let text = binding_test.as_str();
+        let date = binding_date.as_str();
 
         let cmd = self.builder.build(msg);
         let exit = self.processor.process(cmd);
 
-        let resp = self.telegram.send_message(
+        info!("[{}] Message {} was successfully handled.", date, text);
+
+        match self.telegram.send_message(
             self.cfg.chat_id,
             format!(
                 "```Input:\t{}```
@@ -49,12 +56,9 @@ impl Handler for MessageHandler {
                 exit.stderr.as_str(),
                 exit.code,
             ).as_str()
-        );
-        match resp {
-            Ok(_) => (),
-            Err(e) => {
-                error!("Error sending message: {}", e);
-            }
+        ) {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e),
         }
     }
 }

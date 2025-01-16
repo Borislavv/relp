@@ -1,3 +1,4 @@
+use std::panic;
 use service::command::enums::Type;
 use service::command::dto::Command;
 use crate::infrastructure::service;
@@ -10,7 +11,7 @@ const EVENT_PREFIX: &str = "/event";
 const PING_PREFIX: &str = "/ping";
 const NOT_FOUND_PREFIX: &str = "/mirror";
 
-pub trait Builder: Send + Sync {
+pub trait Builder: Send + Sync + panic::RefUnwindSafe {
     fn build(&self, msg: Message) -> Command;
 }
 

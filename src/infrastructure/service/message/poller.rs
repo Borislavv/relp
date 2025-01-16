@@ -3,13 +3,15 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::time::Duration;
 use integration::telegram;
-use std::sync::{mpsc, Arc};
+use std::sync::{mpsc, Arc, Mutex};
 use crate::infrastructure::integration;
 use integration::telegram::dto::Message;
+use crate::infrastructure::integration::telegram::dto::Update;
+use crate::infrastructure::service::message::error::UnknownMessageTypeError;
 
 // Poller is a provider part for "provider-consumer" pattern.
 pub trait Poller {
-    fn poll(&self, out: mpsc::Sender<Message>);
+    fn poll(&self, out: mpsc::SyncSender<Message>);
 }
 
 pub struct LongPoller {
@@ -26,7 +28,7 @@ impl LongPoller {
 }
 impl LongPoller {
     // returns a new offset (a last msg id + 1)
-    fn offset(&self) -> i64 {
+    fn query_offset(&self) -> i64 {
         let response = self.telegram.get_updates(0).unwrap();
 
         let offset: i64;
@@ -38,42 +40,60 @@ impl LongPoller {
 
         offset
     }
+    fn inc_offset(&self, update_id: i64, offset: Rc<RefCell<i64>>) {
+        loop {
+            let mut borrowed = match offset.try_borrow_mut() {
+                Ok(o) => o,
+                Err(_) => continue,
+            };
+            *borrowed = update_id + 1;
+            return;
+        }
+    }
+    fn extract_msg(
+        msg: Option<Message>,
+        edited_msg: Option<Message>
+    ) -> Result<Message, UnknownMessageTypeError> {
+        if msg.is_some() {
+            let Some(message) = msg else {
+                panic!("Logic error, must not be here due to message already is Some.")
+            };
+            Ok(message)
+        } else if edited_msg.is_some() {
+            let Some(message) = edited_msg else {
+                panic!("Logic error, must not be here due to edited_message already is Some.")
+            };
+            Ok(message)
+        } else {
+            error!("Another one unknown message type. \
+                Dump the json and check what's new up there.");
+            Err(UnknownMessageTypeError::new())
+        }
+    }
 }
 impl Poller for LongPoller {
-    fn poll(&self, out: mpsc::Sender<Message>) {
-        let offset = Rc::new(RefCell::new(self.offset()));
+    fn poll(&self, out: mpsc::SyncSender<Message>) {
+        let mut offset = 0;
 
         loop {
-            let offset_cloned = offset.clone();
-            match self.telegram.get_updates(offset.clone().borrow().abs()) {
+            match self.telegram.get_updates(offset.clone()) {
                 Ok(r) => {
-                    for u in r.result {
-                        let msg: Message = if u.message.is_some() {
-                            let Some(m) = u.message else {
-                                panic!("Logic error, must not be here due to message already is Some.")
-                            };
-                            m
-                        } else if u.edited_message.is_some() {
-                            let Some(m) = u.edited_message else {
-                                panic!("Logic error, must not be here due to edited_message already is Some.")
-                            };
-                            m
-                        } else {
-                            let json = serde_json::to_string(&u).unwrap();
-                            error!("Another one unknown message type. \
-                            Dump the json and check what's new up there. Data: {}", json);
-                            continue;
-                        };
+                    for update in r.result {
+                        // joining of message and edited message
+                        // (will be selected just one of which is not None)
+                        let msg = Self::extract_msg(
+                            update.message, update.edited_message
+                        ).unwrap();
 
+                        // send the message to the other side
                         out.send(msg).unwrap();
-                        let mut offset_borrowed = offset_cloned.borrow_mut();
-                        *offset_borrowed = u.update_id + 1
+
+                        // calculate a new offset
+                        offset = update.update_id + 1;
                     }
                 },
-                Err(e) => {
-                    error!("Error getting updates: {}", e);
-                }
-            }
+                Err(e) => error!("Error getting updates: {}", e),
+            };
 
             if self.freq > Duration::from_secs(0) {
                 std::thread::sleep(self.freq);

@@ -25,12 +25,12 @@ impl Processor for CommandProcessor {
     fn process(&self, cmd: Command) -> Exit {
         let executable: Box<dyn command::Executable> = match cmd.r#type {
             enums::Type::Ping => Box::new(command::Ping::new()),
-            enums::Type::Note => Box::new(command::Note::new(self.note_mutex.clone())),
+            enums::Type::Note => Box::new(command::Note::new(cmd, self.note_mutex.clone())),
             enums::Type::Event => Box::new(command::Event::new(self.event_mutex.clone())),
-            enums::Type::Cmd => Box::new(command::Cmd::new()),
+            enums::Type::Cmd => Box::new(command::Cmd::new(cmd)),
             _ => Box::new(command::NotFound::new()),
         };
 
-        executable.exec(cmd)
+        executable.exec()
     }
 }

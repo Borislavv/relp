@@ -5,9 +5,10 @@ use std::sync::{Arc, Mutex};
 use crate::infrastructure::service;
 use std::process::{Command as OsCmd};
 use service::command::dto::{Command, Exit};
+use crate::infrastructure::helper::date::parse_yyyy_mm_dd_hm_from_str;
 
 pub trait Executable {
-    fn exec(&self, cmd: Command) -> Exit;
+    fn exec(&self) -> Exit;
 }
 
 pub struct Ping {}
@@ -17,25 +18,28 @@ impl Ping {
     }
 }
 impl Executable for Ping {
-    fn exec(&self, _: Command) -> Exit {
-        Exit::new(0, "pong".to_string(), "".to_string())
+    fn exec(&self) -> Exit {
+        Exit::new(0, "pong".to_string(), "".to_string(), None)
     }
 }
 
-pub struct Cmd {}
+pub struct Cmd {
+    cmd: Command
+}
 impl Cmd {
-    pub fn new() -> Cmd {
-        Cmd{}
+    pub fn new(cmd: Command) -> Cmd {
+        Cmd{ cmd }
     }
 }
 impl Executable for Cmd {
-    fn exec(&self, cmd: Command) -> Exit {
-        let cmd_parts: &mut Vec<String> = &mut split(cmd.str.as_str())
+    fn exec(&self) -> Exit {
+        let cmd_parts: &mut Vec<String> = &mut split(self.cmd.str.as_str())
             .expect("Failed to parse command.");
 
         if cmd_parts.len() == 0 {
             return Exit::new(3, "".to_string(),
                 "The command is empty, please check the send data and try again.".to_string(),
+                None,
             )
         }
 
@@ -50,22 +54,24 @@ impl Executable for Cmd {
             output.status.code().unwrap(),
             String::from_utf8(output.stdout).unwrap(),
             String::from_utf8(output.stderr).unwrap(),
+            Some(self.cmd.message.clone()),
         )
     }
 }
 
 pub struct Note {
+    cmd: Command,
     list: Arc<Mutex<Vec<String>>>,
 }
 impl Note{
-    pub fn new(list: Arc<Mutex<Vec<String>>>) -> Note {
-        Note{ list }
+    pub fn new(cmd: Command, list: Arc<Mutex<Vec<String>>>) -> Note {
+        Note{ cmd, list }
     }
 }
 impl Executable for Note {
-    fn exec(&self, cmd: Command) -> Exit {
-        if cmd.str != String::new() {
-            self.list.lock().unwrap().push(cmd.str.clone());
+    fn exec(&self) -> Exit {
+        if self.cmd.str != String::new() {
+            self.list.lock().unwrap().push(self.cmd.str.clone());
             Exit::new(0, "Successfully added.".to_string(), "".to_string())
         } else {
             Exit::new(
@@ -82,24 +88,26 @@ impl Executable for Note {
 }
 
 pub struct Event{
+    cmd: Command,
     list: Arc<Mutex<Vec<dto::Event>>>,
 }
 impl Event {
-    pub fn new(list: Arc<Mutex<Vec<dto::Event>>>) -> Event {
-        Event{ list }
+    pub fn new(cmd: Command, list: Arc<Mutex<Vec<dto::Event>>>) -> Event {
+        Event{ cmd, list }
     }
 }
 impl Executable for Event {
-    fn exec(&self, cmd: Command) -> Exit {
-        if cmd.str != String::new() {
-            let datetime = match service::command::util::parse_date_from_str(
-                cmd.str.clone().as_str(),
+    fn exec(&self) -> Exit {
+        if self.cmd.str != String::new() {
+            let datetime = match parse_yyyy_mm_dd_hm_from_str(
+                self.cmd.str.clone().as_str(),
             ) {
                 Ok(date) => date,
-                Err(_) => return Exit::new(1, "".to_string(), "Failed to parse date.".to_string()),
+                Err(_) => return Exit::new(
+                    1, "".to_string(), "Failed to parse date.".to_string()),
             };
 
-            self.list.lock().unwrap().push(dto::Event::new(cmd.str, datetime));
+            self.list.lock().unwrap().push(dto::Event::new(self.cmd.str.clone(), datetime));
 
             Exit::new(0, "Successfully added.".to_string(), "".to_string())
         } else {
@@ -126,14 +134,17 @@ impl Executable for Event {
     }
 }
 
-pub struct NotFound {}
+pub struct NotFound {
+    cmd: Command
+}
 impl NotFound {
-    pub fn new() -> NotFound {
-        NotFound{}
+    pub fn new(cmd: Command) -> NotFound {
+        NotFound{ cmd }
     }
 }
 impl Executable for NotFound {
-    fn exec(&self, cmd: Command) -> Exit {
-        Exit::new(2, "".to_string(), format!("Command `{}` not found.", cmd.str).to_string())
+    fn exec(&self) -> Exit {
+        Exit::new(2, "".to_string(),
+            format!("Command `{}` not found.", self.cmd.str).to_string())
     }
 }

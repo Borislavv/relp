@@ -25,7 +25,7 @@ impl CommandBuilder {
 
 impl Builder for CommandBuilder {
     fn build(&self, msg: Message) -> Command {
-        let text = msg.text;
+        let text = msg.text.clone();
         let text_cloned = text.clone();
         let (r#type, prefix) = match text {
             str if str.starts_with(CMD_PREFIX) => (Type::Cmd, CMD_PREFIX),
@@ -35,6 +35,6 @@ impl Builder for CommandBuilder {
             _ => (Type::NotFound, NOT_FOUND_PREFIX)
         };
 
-        Command::new(text_cloned.replace(prefix, ""), r#type)
+        Command::new(text_cloned.replace(prefix, ""), r#type, msg)
     }
 }

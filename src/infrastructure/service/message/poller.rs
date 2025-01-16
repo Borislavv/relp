@@ -1,5 +1,4 @@
 use log::error;
-use std::rc::Rc;
 use std::cell::RefCell;
 use std::time::Duration;
 use integration::telegram;
@@ -39,16 +38,6 @@ impl LongPoller {
         }
 
         offset
-    }
-    fn inc_offset(&self, update_id: i64, offset: Rc<RefCell<i64>>) {
-        loop {
-            let mut borrowed = match offset.try_borrow_mut() {
-                Ok(o) => o,
-                Err(_) => continue,
-            };
-            *borrowed = update_id + 1;
-            return;
-        }
     }
     fn extract_msg(
         msg: Option<Message>,

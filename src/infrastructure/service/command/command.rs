@@ -32,6 +32,13 @@ impl Executable for Cmd {
     fn exec(&self, cmd: Command) -> Exit {
         let cmd_parts: &mut Vec<String> = &mut split(cmd.str.as_str())
             .expect("Failed to parse command.");
+
+        if cmd_parts.len() == 0 {
+            return Exit::new(3, "".to_string(),
+                "The command is empty, please check the send data and try again.".to_string(),
+            )
+        }
+
         let cmd_name = cmd_parts.remove(0);
 
         let output = OsCmd::new(cmd_name) // make a new process

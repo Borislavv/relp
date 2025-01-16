@@ -31,8 +31,17 @@ impl Poller for LongPoller {
             match self.telegram.get_updates(self.offset.load(Ordering::SeqCst)) {
                 Ok(r) => {
                     for u in r.result {
-                        out.send(u.message).unwrap();
-                        self.offset.store(u.update_id, Ordering::SeqCst);
+                        let msg: Message = if u.message.is_some() {
+                            u.message.unwrap()
+                        } else if u.edited_message.is_some() {
+                            u.edited_message.unwrap()
+                        } else {
+                            panic!("Another one unknown message type. \
+                            Dump the json and check what's new up there.")
+                        };
+
+                        out.send(msg).unwrap();
+                        self.offset.store(u.update_id + 1, Ordering::SeqCst);
                     }
                 },
                 Err(e) => {

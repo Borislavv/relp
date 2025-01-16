@@ -17,7 +17,8 @@ pub struct SendMessageResponse {
 #[derive(Deserialize, Debug)]
 pub struct Update {
     pub update_id: i64,
-    pub message: Message,
+    pub message: Option<Message>,
+    pub edited_message: Option<Message>,
 }
 // Message details.
 #[derive(Deserialize, Debug)]

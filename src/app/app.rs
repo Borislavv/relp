@@ -7,9 +7,14 @@ use app::error::NotBootedKernelError;
 use infrastructure::service::message;
 use infrastructure::service::command;
 use infrastructure::integration::telegram;
+use crate::infrastructure::service::executor;
 
 pub trait Kernel {
     fn run(&self) -> Result<(), NotBootedKernelError>;
+}
+
+pub trait Bootable {
+    fn boot(cfg: Cfg) -> Self;
 }
 
 pub struct App {
@@ -19,10 +24,10 @@ pub struct App {
 }
 impl App {
     pub fn new() -> Self {
-        App::boot(&Cfg::new().unwrap())
+        App::boot(Cfg::new().unwrap())
     }
 
-    fn boot(cfg: &Cfg) -> Self {
+    fn boot(cfg: Cfg) -> Self {
         env_logger::init();
 
         let token = cfg.token.clone();
@@ -43,12 +48,10 @@ impl App {
 
         let consumer: Box<dyn message::consumer::Consumer> = Box::new(
             message::consumer::MessageConsumer::new(
-                Box::new(message::handler::MessageHandler::new(
-                    cfg.clone(),
-                    Box::new(command::builder::CommandBuilder::new()),
-                    Box::new(command::processor::CommandProcessor::new()),
-                    telegram_facade,
-                ))
+                Box::new(executor::executor::CommandExecutor::new(
+                    Box::new(executor::responder::ExitCommandResponder::new(cfg, telegram_facade)),
+                )),
+                Box::new(command::factory::CommandFactory::new()),
             )
         );
 

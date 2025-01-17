@@ -1,13 +1,13 @@
-use crate::app;
-use std::thread;
-use app::cfg::Cfg;
 use crate::infrastructure;
-use std::sync::{mpsc, Arc, Mutex};
-use app::error::NotBootedKernelError;
+use std::sync::{Arc, Mutex};
+use crate::app::cfg::cfg::Cfg;
 use infrastructure::service::message;
-use infrastructure::service::command;
 use infrastructure::integration::telegram;
-use crate::infrastructure::service::executor;
+use crate::app::error::kernel::NotBootedKernelError;
+use crate::infrastructure::factory::command::CommandFactory;
+use crate::domain::service::runner::runner::{AppRunner, Runner};
+use crate::domain::service::executor::executor::CommandExecutor;
+use crate::infrastructure::service::execution::responder::ExitCommandResponder;
 
 pub trait Kernel {
     fn run(&self) -> Result<(), NotBootedKernelError>;
@@ -19,8 +19,7 @@ pub trait Bootable {
 
 pub struct App {
     is_init: bool,
-    provider: Arc<Mutex<Box<dyn message::provider::Provider>>>,
-    consumer: Arc<Mutex<Box<dyn message::consumer::Consumer>>>,
+    app_runner: Box<dyn Runner>
 }
 impl App {
     pub fn new() -> Self {
@@ -35,56 +34,31 @@ impl App {
         let frequency_cloned = frequency.clone();
 
         let telegram_facade: Arc<Box<dyn telegram::facade::FacadeTrait>> = Arc::new(Box::new(
-            telegram::facade::Facade::new(
-                Box::new(telegram::service::Service::new(
-                    Box::new(telegram::http::Client::new(token, frequency))
-                ))
-            )
+            telegram::facade::Facade::new(Box::new(telegram::service::Service::new(
+                Box::new(telegram::http::Client::new(token, frequency))
+            )))
         ));
 
-        let provider: Box<dyn message::provider::Provider> = Box::new(
+        let provider: Arc<Mutex<Box<dyn message::provider::Provider>>> = Arc::new(Mutex::new(Box::new(
             message::poller::LongPoller::new(frequency_cloned, telegram_facade.clone())
-        );
+        )));
 
-        let consumer: Box<dyn message::consumer::Consumer> = Box::new(
+        let consumer: Arc<Mutex<Box<dyn message::consumer::Consumer>>> = Arc::new(Mutex::new(Box::new(
             message::consumer::MessageConsumer::new(
-                Box::new(executor::executor::CommandExecutor::new(
-                    Box::new(executor::responder::ExitCommandResponder::new(cfg, telegram_facade)),
-                )),
-                Box::new(command::factory::CommandFactory::new()),
+                Box::new(CommandExecutor::new(Box::new(ExitCommandResponder::new(cfg, telegram_facade)))),
+                Box::new(CommandFactory::new()),
             )
-        );
+        )));
 
-         App{
-             is_init: true,
-             provider: Arc::new(Mutex::new(provider)),
-             consumer: Arc::new(Mutex::new(consumer)),
-        }
+        App{ is_init: true, app_runner: Box::new(AppRunner::new(provider, consumer)) }
     }
 }
 impl Kernel for App {
     fn run(&self) -> Result<(), NotBootedKernelError> {
         if !self.is_init {
-            return Err(NotBootedKernelError::new().into());
+            Err(NotBootedKernelError::new().into())
+        } else {
+            Ok(self.app_runner.run())
         }
-
-        let (s, r) = mpsc::sync_channel(1);
-        let provider = self.provider.clone();
-        let consumer = self.consumer.clone();
-
-        let threads = vec![
-            thread::spawn(move || {
-                provider.lock().unwrap().provide(s);
-            }),
-            thread::spawn(move || {
-                consumer.lock().unwrap().consume(r);
-            })
-        ];
-
-        for descriptor in threads {
-            descriptor.join().unwrap();
-        }
-
-        Ok(())
     }
 }

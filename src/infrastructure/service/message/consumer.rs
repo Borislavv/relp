@@ -1,9 +1,9 @@
+use log::{error, info};
 use integration::telegram;
 use std::sync::mpsc::Receiver;
-use log::{error, info};
 use crate::infrastructure::integration;
-use crate::infrastructure::service::command::factory::Factoryer;
-use crate::infrastructure::service::executor::executor::Executor;
+use crate::infrastructure::factory::command::Factoryer;
+use crate::domain::service::executor::executor::Executor;
 
 pub trait Consumer: Send {
     fn consume(&self, ch: Receiver<telegram::model::Message>);
@@ -23,7 +23,7 @@ impl MessageConsumer {
 impl Consumer for MessageConsumer {
     fn consume(&self, msg_ch: Receiver<telegram::model::Message>) {
         for msg in msg_ch {
-            match self.executor.exec(Box::new(self.factory.make(msg.clone()))) {
+            match self.executor.exec(self.factory.make(msg.clone())) {
                 Ok(_) => info!("Command: {} successfully executed.", msg.text),
                 Err(e) => error!("Error: {} occurred while execution command: {}.", e, msg.text),
             }

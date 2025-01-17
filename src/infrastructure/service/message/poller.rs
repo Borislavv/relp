@@ -4,7 +4,7 @@ use integration::telegram;
 use std::sync::{mpsc, Arc};
 use crate::infrastructure::integration;
 use integration::telegram::model::Message;
-use crate::infrastructure::service::message::error::UnknownMessageTypeError;
+use crate::domain::error::message::UnknownMessageTypeError;
 
 // Poller is a provider part for "provider-consumer" pattern.
 pub trait Poller {

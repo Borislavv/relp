@@ -1,37 +1,37 @@
 use shlex::split;
 use std::cmp::Ordering;
-use service::command::model;
+use chrono::NaiveDateTime;
 use std::sync::{Arc, Mutex};
-use crate::infrastructure::service;
 use std::process::{Command as OsCmd};
-use service::command::model::{Command, Exit};
+use crate::infrastructure::model::command;
+use crate::infrastructure::model::command::{Command, Exit};
 use crate::infrastructure::helper::date::parse_yyyy_mm_dd_hm_from_str;
 
 pub trait Executable {
     fn exec(&self) -> Exit;
 }
 
-pub struct Ping {}
-impl Ping {
-    pub fn new() -> Ping {
-        Ping{}
+pub struct PingCmd {}
+impl PingCmd {
+    pub fn new() -> PingCmd {
+        PingCmd {}
     }
 }
-impl Executable for Ping {
+impl Executable for PingCmd {
     fn exec(&self) -> Exit {
         Exit::new(0, "pong".to_string(), "".to_string(), None)
     }
 }
 
-pub struct Cmd {
+pub struct ExecCmd {
     cmd: Command
 }
-impl Cmd {
-    pub fn new(cmd: Command) -> Cmd {
-        Cmd{ cmd }
+impl ExecCmd {
+    pub fn new(cmd: Command) -> ExecCmd {
+        ExecCmd { cmd }
     }
 }
-impl Executable for Cmd {
+impl Executable for ExecCmd {
     fn exec(&self) -> Exit {
         let cmd_parts: &mut Vec<String> = &mut split(self.cmd.str.as_str())
             .expect("Failed to split str command.");
@@ -69,16 +69,16 @@ impl Executable for Cmd {
     }
 }
 
-pub struct Note {
+pub struct NoteCmd {
     cmd: Command,
     list: Arc<Mutex<Vec<String>>>,
 }
-impl Note{
-    pub fn new(cmd: Command, list: Arc<Mutex<Vec<String>>>) -> Note {
-        Note{ cmd, list }
+impl NoteCmd {
+    pub fn new(cmd: Command, list: Arc<Mutex<Vec<String>>>) -> NoteCmd {
+        NoteCmd { cmd, list }
     }
 }
-impl Executable for Note {
+impl Executable for NoteCmd {
     fn exec(&self) -> Exit {
         let msg = Some(self.cmd.message.clone());
         if self.cmd.str != String::new() {
@@ -99,16 +99,16 @@ impl Executable for Note {
     }
 }
 
-pub struct Event{
+pub struct EventCmd {
     cmd: Command,
-    list: Arc<Mutex<Vec<model::Event>>>,
+    list: Arc<Mutex<Vec<Event>>>,
 }
-impl Event {
-    pub fn new(cmd: Command, list: Arc<Mutex<Vec<model::Event>>>) -> Event {
-        Event{ cmd, list }
+impl EventCmd {
+    pub fn new(cmd: Command, list: Arc<Mutex<Vec<Event>>>) -> EventCmd {
+        EventCmd { cmd, list }
     }
 }
-impl Executable for Event {
+impl Executable for EventCmd {
     fn exec(&self) -> Exit {
         let msg = Some(self.cmd.message.clone());
 
@@ -120,7 +120,7 @@ impl Executable for Event {
                 Err(_) => return Exit::new(1, "".to_string(), "Failed to parse date.".to_string(), msg),
             };
 
-            self.list.lock().unwrap().push(model::Event::new(self.cmd.str.clone(), datetime));
+            self.list.lock().unwrap().push(Event::new(self.cmd.str.clone(), datetime));
 
             let between = datetime.signed_duration_since(chrono::Local::now().naive_utc());
 
@@ -131,7 +131,7 @@ impl Executable for Event {
                 msg,
             )
         } else {
-            self.list.lock().unwrap().sort_by(|a: &model::Event, b: &model::Event| {
+            self.list.lock().unwrap().sort_by(|a: &Event, b: &Event| {
                 if a.date.ge(&b.date) {
                     Ordering::Greater
                 } else if a.date.le(&b.date) {
@@ -155,17 +155,32 @@ impl Executable for Event {
     }
 }
 
-pub struct NotFound {
+pub struct NotFoundCmd {
     cmd: Command
 }
-impl NotFound {
-    pub fn new(cmd: Command) -> NotFound {
-        NotFound{ cmd }
+impl NotFoundCmd {
+    pub fn new(cmd: Command) -> NotFoundCmd {
+        NotFoundCmd { cmd }
     }
 }
-impl Executable for NotFound {
+impl Executable for NotFoundCmd {
     fn exec(&self) -> Exit {
         Exit::new(2, "".to_string(),
             format!("Command `{}` not found.", self.cmd.str).to_string(), None)
+    }
+}
+
+pub struct Event {
+    pub text: String,
+    pub date: NaiveDateTime
+}
+impl Event {
+    pub fn new(text: String, date: NaiveDateTime) -> Self {
+        Self { text, date }
+    }
+}
+impl std::fmt::Display for Event {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}: {}", self.date.format(command::DATE_FORMAT).to_string().as_str(), self.text)
     }
 }

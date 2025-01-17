@@ -1,10 +1,9 @@
 use std::sync::{Arc, Mutex};
-use service::command::enumerate::Type;
-use service::command::model::Command;
-use crate::infrastructure::service;
 use crate::infrastructure::integration;
+use crate::domain::r#enum::command::Type;
 use integration::telegram::model::Message;
-use crate::infrastructure::service::command::model::Event;
+use crate::infrastructure::model::command::Command;
+use crate::domain::model::command::{Event, EventCmd, ExecCmd, Executable, NotFoundCmd, NoteCmd, PingCmd};
 
 const CMD_PREFIX: &str = "/cmd";
 const NOTE_PREFIX: &str = "/note";
@@ -13,7 +12,7 @@ const PING_PREFIX: &str = "/ping";
 const NOT_FOUND_PREFIX: &str = "/mirror";
 
 pub trait Factoryer: Send + Sync {
-    fn make(&self, msg: Message) -> Command;
+    fn make(&self, msg: Message) -> Box<dyn Executable>;
 }
 
 pub struct CommandFactory {
@@ -31,21 +30,27 @@ impl CommandFactory {
 }
 
 impl Factoryer for CommandFactory {
-    fn make(&self, msg: Message) -> Command {
+    fn make(&self, msg: Message) -> Box<dyn Executable> {
         let (cmd_type, prefix) = match msg.text.clone() {
-            str if str.starts_with(CMD_PREFIX) => (Type::Cmd, CMD_PREFIX),
+            str if str.starts_with(CMD_PREFIX) => (Type::Exec, CMD_PREFIX),
             str if str.starts_with(NOTE_PREFIX) => (Type::Note, NOTE_PREFIX),
             str if str.starts_with(EVENT_PREFIX) => (Type::Event, EVENT_PREFIX),
             str if str.starts_with(PING_PREFIX) => (Type::Ping, PING_PREFIX),
             _ => (Type::NotFound, NOT_FOUND_PREFIX)
         };
 
-        Command::new(
+        let cmd = Command::new(
             msg.text.clone().replace(prefix, ""),
-            cmd_type,
+            cmd_type.clone(),
             msg,
-            self.note_mutex.clone(),
-            self.event_mutex.clone(),
-        )
+        );
+
+         match cmd_type {
+            Type::Ping => Box::new(PingCmd::new()),
+            Type::Note => Box::new(NoteCmd::new(cmd, self.note_mutex.clone())),
+            Type::Event => Box::new(EventCmd::new(cmd, self.event_mutex.clone())),
+            Type::Exec => Box::new(ExecCmd::new(cmd)),
+            _ => Box::new(NotFoundCmd::new(cmd)),
+        }
     }
 }

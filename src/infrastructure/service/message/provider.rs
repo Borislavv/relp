@@ -1,6 +1,4 @@
-use std::panic;
-use log::error;
-use std::sync::mpsc::{Sender, SyncSender};
+use std::sync::mpsc::SyncSender;
 use crate::infrastructure::service;
 use crate::infrastructure::integration;
 use integration::telegram::dto::Message;

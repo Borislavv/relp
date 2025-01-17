@@ -3,7 +3,7 @@ use service::command::enumerate::Type;
 use service::command::model::Command;
 use crate::infrastructure::service;
 use crate::infrastructure::integration;
-use integration::telegram::dto::Message;
+use integration::telegram::model::Message;
 use crate::infrastructure::service::command::model::Event;
 
 const CMD_PREFIX: &str = "/cmd";

@@ -1,10 +1,10 @@
 use shlex::split;
 use std::cmp::Ordering;
-use service::command::dto;
+use service::command::model;
 use std::sync::{Arc, Mutex};
 use crate::infrastructure::service;
 use std::process::{Command as OsCmd};
-use service::command::dto::{Command, Exit};
+use service::command::model::{Command, Exit};
 use crate::infrastructure::helper::date::parse_yyyy_mm_dd_hm_from_str;
 
 pub trait Executable {
@@ -70,9 +70,10 @@ impl Note{
 }
 impl Executable for Note {
     fn exec(&self) -> Exit {
+        let msg = Some(self.cmd.message.clone());
         if self.cmd.str != String::new() {
             self.list.lock().unwrap().push(self.cmd.str.clone());
-            Exit::new(0, "Successfully added.".to_string(), "".to_string())
+            Exit::new(0, "Successfully added.".to_string(), "".to_string(), msg)
         } else {
             Exit::new(
                 0,
@@ -82,6 +83,7 @@ impl Executable for Note {
                     .collect::<Vec<String>>()
                     .join("\n"),
                 "".to_string(),
+                msg
             )
         }
     }
@@ -89,29 +91,30 @@ impl Executable for Note {
 
 pub struct Event{
     cmd: Command,
-    list: Arc<Mutex<Vec<dto::Event>>>,
+    list: Arc<Mutex<Vec<model::Event>>>,
 }
 impl Event {
-    pub fn new(cmd: Command, list: Arc<Mutex<Vec<dto::Event>>>) -> Event {
+    pub fn new(cmd: Command, list: Arc<Mutex<Vec<model::Event>>>) -> Event {
         Event{ cmd, list }
     }
 }
 impl Executable for Event {
     fn exec(&self) -> Exit {
+        let msg = Some(self.cmd.message.clone());
         if self.cmd.str != String::new() {
             let datetime = match parse_yyyy_mm_dd_hm_from_str(
                 self.cmd.str.clone().as_str(),
             ) {
                 Ok(date) => date,
                 Err(_) => return Exit::new(
-                    1, "".to_string(), "Failed to parse date.".to_string()),
+                    1, "".to_string(), "Failed to parse date.".to_string(), msg),
             };
 
-            self.list.lock().unwrap().push(dto::Event::new(self.cmd.str.clone(), datetime));
+            self.list.lock().unwrap().push(model::Event::new(self.cmd.str.clone(), datetime));
 
-            Exit::new(0, "Successfully added.".to_string(), "".to_string())
+            Exit::new(0, "Successfully added.".to_string(), "".to_string(), msg)
         } else {
-            self.list.lock().unwrap().sort_by(|a: &dto::Event, b: &dto::Event| {
+            self.list.lock().unwrap().sort_by(|a: &model::Event, b: &model::Event| {
                 if a.date.ge(&b.date) {
                     Ordering::Greater
                 } else if a.date.le(&b.date) {
@@ -129,6 +132,7 @@ impl Executable for Event {
                     .collect::<Vec<String>>()
                     .join("\n"),
                 "".to_string(),
+                msg,
             )
         }
     }
@@ -145,6 +149,6 @@ impl NotFound {
 impl Executable for NotFound {
     fn exec(&self) -> Exit {
         Exit::new(2, "".to_string(),
-            format!("Command `{}` not found.", self.cmd.str).to_string())
+            format!("Command `{}` not found.", self.cmd.str).to_string(), None)
     }
 }

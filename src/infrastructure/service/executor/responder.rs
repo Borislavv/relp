@@ -1,11 +1,11 @@
 use std::sync::Arc;
-use reqwest::Error;
+use std::error::Error;
 use crate::app::cfg::Cfg;
 use crate::infrastructure::integration::telegram;
 use crate::infrastructure::service::command::model::Exit;
 
 pub trait Responder: Send + Sync {
-    fn respond(&self, exit_state: Exit) -> Result<(), Error>;
+    fn respond(&self, exit_state: Exit) -> Result<(), Box<dyn Error>>;
 }
 
 pub struct ExitCommandResponder {
@@ -20,7 +20,7 @@ impl ExitCommandResponder {
 }
 
 impl Responder for ExitCommandResponder {
-    fn respond(&self, exit: Exit) -> Result<(), Error> {
+    fn respond(&self, exit: Exit) -> Result<(), Box<dyn Error>> {
         match self.telegram.send_message(
             self.cfg.chat_id,
             format!(

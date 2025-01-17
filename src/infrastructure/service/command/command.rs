@@ -111,18 +111,25 @@ impl Event {
 impl Executable for Event {
     fn exec(&self) -> Exit {
         let msg = Some(self.cmd.message.clone());
+
         if self.cmd.str != String::new() {
             let datetime = match parse_yyyy_mm_dd_hm_from_str(
                 self.cmd.str.clone().as_str(),
             ) {
                 Ok(date) => date,
-                Err(_) => return Exit::new(
-                    1, "".to_string(), "Failed to parse date.".to_string(), msg),
+                Err(_) => return Exit::new(1, "".to_string(), "Failed to parse date.".to_string(), msg),
             };
 
             self.list.lock().unwrap().push(model::Event::new(self.cmd.str.clone(), datetime));
 
-            Exit::new(0, "Successfully added.".to_string(), "".to_string(), msg)
+            let between = datetime.signed_duration_since(chrono::Local::now().naive_utc());
+
+            Exit::new(
+                0,
+                format!("Successfully added and will be triggerred in {}.", between.to_string()),
+                "".to_string(),
+                msg,
+            )
         } else {
             self.list.lock().unwrap().sort_by(|a: &model::Event, b: &model::Event| {
                 if a.date.ge(&b.date) {

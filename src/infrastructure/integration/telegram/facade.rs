@@ -1,4 +1,4 @@
-use reqwest::Error;
+use std::error::Error;
 use integration::telegram;
 use crate::infrastructure::integration;
 use integration::telegram::model::{GetUpdatesResponse, SendMessageResponse};
@@ -16,10 +16,10 @@ impl Facade {
 }
 
 impl telegram::service::ServiceTrait for Facade {
-    fn get_updates(&self, offset: i64) -> Result<GetUpdatesResponse, Error> {
+    fn get_updates(&self, offset: i64) -> Result<GetUpdatesResponse, Box<dyn Error>> {
         self.service.get_updates(offset)
     }
-    fn send_message(&self, chat_id: u64, message: &str) -> Result<SendMessageResponse, Error> {
+    fn send_message(&self, chat_id: u64, message: &str) -> Result<SendMessageResponse, Box<dyn Error>> {
         self.service.send_message(chat_id, message)
     }
 }

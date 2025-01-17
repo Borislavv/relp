@@ -1,30 +1,28 @@
-use std::panic;
-use service::message;
 use integration::telegram;
 use std::sync::mpsc::Receiver;
-use log::error;
-use reqwest::Error;
-use crate::infrastructure::service;
 use crate::infrastructure::integration;
+use crate::infrastructure::service::command::factory::Factoryer;
+use crate::infrastructure::service::executor::executor::Executor;
 
 pub trait Consumer: Send {
     fn consume(&self, ch: Receiver<telegram::dto::Message>);
 }
 
 pub struct MessageConsumer {
-    handler: Box<dyn message::handler::Handler>,
+    executor: Box<dyn Executor>,
+    factory: Box<dyn Factoryer>,
 }
 
 impl MessageConsumer {
-    pub fn new(handler: Box<dyn message::handler::Handler>) -> MessageConsumer {
-        MessageConsumer { handler }
+    pub fn new(executor: Box<dyn Executor>, factory: Box<dyn Factoryer>) -> MessageConsumer {
+        MessageConsumer { executor, factory }
     }
 }
 
 impl Consumer for MessageConsumer {
-    fn consume(&self, r#in: Receiver<telegram::dto::Message>) {
-        for msg in r#in {
-            self.handler.handle(msg).expect("Handling msg failed.");
+    fn consume(&self, msg_ch: Receiver<telegram::dto::Message>) {
+        for msg in msg_ch {
+            self.executor.exec(Box::new(self.factory.make(msg.clone()))).unwrap();
         }
     }
 }

@@ -1,9 +1,9 @@
 use crate::infrastructure::service;
 use crate::infrastructure::integration;
-use std::sync::mpsc::{Receiver, Sender, SyncSender};
 use integration::telegram::dto::Message;
 use service::message::consumer::Consumer;
 use service::message::provider::Provider;
+use std::sync::mpsc::{Receiver, SyncSender};
 
 pub trait Facade: Provider + Consumer {}
 

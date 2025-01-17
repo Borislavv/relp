@@ -1,6 +1,5 @@
-pub mod builder;
-pub mod dto;
-pub mod enums;
-pub mod processor;
+pub mod factory;
+pub mod model;
+pub mod enumerate;
 pub mod command;
 pub mod error;

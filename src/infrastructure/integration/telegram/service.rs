@@ -1,7 +1,7 @@
 use reqwest::Error;
 use crate::infrastructure::integration;
 use integration::telegram::http::HttpClient;
-use integration::telegram::dto::{GetUpdatesResponse, SendMessageResponse};
+use integration::telegram::model::{GetUpdatesResponse, SendMessageResponse};
 
 pub trait ServiceTrait: Send + Sync {
     fn get_updates(&self, offset: i64) -> Result<GetUpdatesResponse, Error>;

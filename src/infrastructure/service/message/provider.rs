@@ -1,7 +1,7 @@
 use std::sync::mpsc::SyncSender;
 use crate::infrastructure::service;
 use crate::infrastructure::integration;
-use integration::telegram::dto::Message;
+use integration::telegram::model::Message;
 use service::message::poller::{LongPoller, Poller};
 
 pub trait Provider: Send {

@@ -1,11 +1,9 @@
 use log::error;
-use std::cell::RefCell;
 use std::time::Duration;
 use integration::telegram;
-use std::sync::{mpsc, Arc, Mutex};
+use std::sync::{mpsc, Arc};
 use crate::infrastructure::integration;
 use integration::telegram::dto::Message;
-use crate::infrastructure::integration::telegram::dto::Update;
 use crate::infrastructure::service::message::error::UnknownMessageTypeError;
 
 // Poller is a provider part for "provider-consumer" pattern.
@@ -62,7 +60,7 @@ impl LongPoller {
 }
 impl Poller for LongPoller {
     fn poll(&self, out: mpsc::SyncSender<Message>) {
-        let mut offset = 0;
+        let mut offset = self.query_offset();
 
         loop {
             match self.telegram.get_updates(offset.clone()) {

@@ -34,7 +34,7 @@ impl Cmd {
 impl Executable for Cmd {
     fn exec(&self) -> Exit {
         let cmd_parts: &mut Vec<String> = &mut split(self.cmd.str.as_str())
-            .expect("Failed to parse command.");
+            .expect("Failed to split str command.");
 
         if cmd_parts.len() == 0 {
             return Exit::new(3, "".to_string(),
@@ -44,18 +44,28 @@ impl Executable for Cmd {
         }
 
         let cmd_name = cmd_parts.remove(0);
-
         let output = OsCmd::new(cmd_name) // make a new process
             .args(cmd_parts) // passing args. into the command
-            .output() // run process
-            .expect("Failed to execute command.");
+            .output(); // run process;
 
-        Exit::new(
-            output.status.code().unwrap(),
-            String::from_utf8(output.stdout).unwrap(),
-            String::from_utf8(output.stderr).unwrap(),
-            Some(self.cmd.message.clone()),
-        )
+        match output {
+            Ok(output) => {
+                Exit::new(
+                    output.status.code().unwrap(),
+                    String::from_utf8(output.stdout).unwrap(),
+                    String::from_utf8(output.stderr).unwrap(),
+                    Some(self.cmd.message.clone()),
+                )
+            },
+            Err(error) => {
+                Exit::new(
+                    1,
+                    "".to_string(),
+                    error.to_string(),
+                    Some(self.cmd.message.clone()),
+                )
+            }
+        }
     }
 }
 

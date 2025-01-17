@@ -1,6 +1,6 @@
 use crate::infrastructure::service;
 use crate::infrastructure::integration;
-use integration::telegram::dto::Message;
+use integration::telegram::model::Message;
 use service::message::consumer::Consumer;
 use service::message::provider::Provider;
 use std::sync::mpsc::{Receiver, SyncSender};

@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 use chrono::NaiveDateTime;
-use crate::infrastructure::integration::telegram::dto::Message;
+use crate::infrastructure::integration::telegram::model::Message;
 use crate::infrastructure::service::command::{command, enumerate};
 
 const DATE_FORMAT: &str = "%Y-%m-%d %H:%M:%S";

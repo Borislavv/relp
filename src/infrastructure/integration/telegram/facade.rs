@@ -1,7 +1,7 @@
 use reqwest::Error;
 use integration::telegram;
 use crate::infrastructure::integration;
-use integration::telegram::dto::{GetUpdatesResponse, SendMessageResponse};
+use integration::telegram::model::{GetUpdatesResponse, SendMessageResponse};
 
 pub trait FacadeTrait: telegram::service::ServiceTrait + Send + Sync {}
 

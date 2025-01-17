@@ -1,10 +1,9 @@
-use std::panic::RefUnwindSafe;
 use reqwest::Error;
 use crate::infrastructure::integration;
 use integration::telegram::http::HttpClient;
 use integration::telegram::dto::{GetUpdatesResponse, SendMessageResponse};
 
-pub trait ServiceTrait: Send + Sync + RefUnwindSafe {
+pub trait ServiceTrait: Send + Sync {
     fn get_updates(&self, offset: i64) -> Result<GetUpdatesResponse, Error>;
     fn send_message(&self, chat_id: u64, message: &str) -> Result<SendMessageResponse, Error>;
 }

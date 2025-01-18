@@ -1,6 +1,6 @@
 use shlex::split;
 use std::cmp::Ordering;
-use chrono::NaiveDateTime;
+use chrono::{Local, NaiveDateTime};
 use std::sync::{Arc, Mutex};
 use std::process::{Command as OsCmd};
 use crate::infrastructure::model::command;
@@ -71,10 +71,10 @@ impl Executable for ExecCmd {
 
 pub struct NoteCmd {
     cmd: Command,
-    list: Arc<Mutex<Vec<String>>>,
+    list: Arc<Mutex<Vec<Note>>>,
 }
 impl NoteCmd {
-    pub fn new(cmd: Command, list: Arc<Mutex<Vec<String>>>) -> NoteCmd {
+    pub fn new(cmd: Command, list: Arc<Mutex<Vec<Note>>>) -> NoteCmd {
         NoteCmd { cmd, list }
     }
 }
@@ -82,7 +82,7 @@ impl Executable for NoteCmd {
     fn exec(&self) -> Exit {
         let msg = Some(self.cmd.message.clone());
         if self.cmd.str != String::new() {
-            self.list.lock().unwrap().push(self.cmd.str.clone());
+            self.list.lock().unwrap().push(Note::new(self.cmd.str.clone()));
             Exit::new(0, "Successfully added.".to_string(), "".to_string(), msg)
         } else {
             Exit::new(
@@ -122,11 +122,14 @@ impl Executable for EventCmd {
 
             self.list.lock().unwrap().push(Event::new(self.cmd.str.clone(), datetime));
 
-            let between = datetime.signed_duration_since(chrono::Local::now().naive_utc());
+            let between = datetime.signed_duration_since(Local::now().naive_local());
 
             Exit::new(
                 0,
-                format!("Successfully added and will be triggerred in {}.", between.to_string()),
+                format!("[{}] Successfully added and will be triggerred in {} weeks {} days \
+                {} hours {} minutes {} seconds.", Local::now().naive_local().format("%Y-%m-%dT%H:%M"),
+                between.num_weeks(), between .num_days(), between.num_hours(),
+                between.num_minutes(), between.num_seconds()),
                 "".to_string(),
                 msg,
             )
@@ -170,6 +173,21 @@ impl Executable for NotFoundCmd {
     }
 }
 
+pub struct Note {
+    pub text: String,
+}
+impl Note {
+    pub fn new(text: String) -> Self {
+        Self { text }
+    }
+}
+impl std::fmt::Display for Note {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.text)
+    }
+}
+
+#[derive(Clone, Default)]
 pub struct Event {
     pub text: String,
     pub date: NaiveDateTime
@@ -181,6 +199,6 @@ impl Event {
 }
 impl std::fmt::Display for Event {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}: {}", self.date.format(command::DATE_FORMAT).to_string().as_str(), self.text)
+        write!(f, "{}", self.text)
     }
 }

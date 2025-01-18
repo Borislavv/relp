@@ -1,6 +1,8 @@
 use std::thread;
 use std::thread::JoinHandle;
 use std::sync::{mpsc, Arc, Mutex};
+use log::info;
+use crate::domain::service::command;
 use crate::infrastructure::service::message;
 
 pub trait Runner {
@@ -8,26 +10,35 @@ pub trait Runner {
 }
 
 pub struct AppRunner {
+    worker: Arc<Box<dyn command::worker::Worker>>,
     provider: Arc<Mutex<Box<dyn message::provider::Provider>>>,
     consumer: Arc<Mutex<Box<dyn message::consumer::Consumer>>>,
 }
 
 impl AppRunner {
     pub fn new(
+        worker: Arc<Box<dyn command::worker::Worker>>,
         provider: Arc<Mutex<Box<dyn message::provider::Provider>>>,
-        consumer: Arc<Mutex<Box<dyn message::consumer::Consumer>>>
+        consumer: Arc<Mutex<Box<dyn message::consumer::Consumer>>>,
     ) -> AppRunner {
-        AppRunner { provider, consumer }
+        AppRunner { worker, provider, consumer }
     }
 }
 
 impl Runner for AppRunner {
     fn run(&self) -> () {
         let (s, r) = mpsc::sync_channel(100);
+        let worker = self.worker.clone();
         let provider = self.provider.clone();
         let consumer = self.consumer.clone();
 
         let mut threads: Vec<JoinHandle<()>> = Vec::new();
+
+        threads.push(
+            thread::spawn(move || {
+                worker.serve();
+            })
+        );
 
         threads.push(
             thread::spawn(move || {

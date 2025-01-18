@@ -1,10 +1,13 @@
 use crate::infrastructure;
 use std::sync::{Arc, Mutex};
 use crate::app::cfg::cfg::Cfg;
+use crate::domain::service::command;
 use infrastructure::service::message;
+use crate::app::model::state::{AppState, State};
 use infrastructure::integration::telegram;
 use crate::app::error::kernel::NotBootedKernelError;
 use crate::domain::factory::command::CommandFactory;
+use crate::domain::service::command::worker::Worker;
 use crate::domain::service::runner::runner::{AppRunner, Runner};
 use crate::domain::service::executor::executor::CommandExecutor;
 use crate::infrastructure::service::execution::responder::ExitCommandResponder;
@@ -33,24 +36,33 @@ impl App {
         let frequency = cfg.poll_frequency.clone();
         let frequency_cloned = frequency.clone();
 
-        let telegram_facade: Arc<Box<dyn telegram::facade::FacadeTrait>> = Arc::new(Box::new(
-            telegram::facade::Facade::new(Box::new(telegram::service::Service::new(
+        let telegram_facade: Arc<Box<dyn telegram::facade::TelegramFacadeTrait>> = Arc::new(Box::new(
+            telegram::facade::TelegramFacade::new(Box::new(telegram::service::TelegramService::new(
                 Box::new(telegram::http::Client::new(token, frequency))
             )))
         ));
 
+        let state: Arc<Box<dyn State>> = Arc::new(Box::new(AppState::new()));
+
         let provider: Arc<Mutex<Box<dyn message::provider::Provider>>> = Arc::new(Mutex::new(Box::new(
-            message::poller::LongPoller::new(frequency_cloned, telegram_facade.clone())
+            message::poller::LongPoller::new(frequency_cloned, state.clone(), telegram_facade.clone())
         )));
+
+        let events_mutex = Arc::new(Mutex::new(Vec::new()));
 
         let consumer: Arc<Mutex<Box<dyn message::consumer::Consumer>>> = Arc::new(Mutex::new(Box::new(
             message::consumer::MessageConsumer::new(
-                Box::new(CommandExecutor::new(Box::new(ExitCommandResponder::new(cfg, telegram_facade)))),
-                Box::new(CommandFactory::new()),
-            )
+                Box::new(CommandExecutor::new(Box::new(ExitCommandResponder::new(cfg.clone(), telegram_facade.clone())))),
+                Box::new(CommandFactory::new(events_mutex.clone())),
+                state.clone(),
+            ),
         )));
 
-        App{ is_init: true, app_runner: Box::new(AppRunner::new(provider, consumer)) }
+        let worker: Arc<Box<dyn Worker>> = Arc::new(Box::new(command::worker::CommandWorker::new(
+            cfg, state.clone(), events_mutex, telegram_facade)
+        ));
+
+        App{ is_init: true, app_runner: Box::new(AppRunner::new(worker, provider, consumer)) }
     }
 }
 impl Kernel for App {

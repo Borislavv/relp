@@ -2,7 +2,7 @@ use log::{error, info};
 use integration::telegram;
 use std::sync::mpsc::Receiver;
 use crate::infrastructure::integration;
-use crate::infrastructure::factory::command::Factoryer;
+use crate::domain::factory::command::Factoryer;
 use crate::domain::service::executor::executor::Executor;
 
 pub trait Consumer: Send {

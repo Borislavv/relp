@@ -4,7 +4,7 @@ use crate::app::cfg::cfg::Cfg;
 use infrastructure::service::message;
 use infrastructure::integration::telegram;
 use crate::app::error::kernel::NotBootedKernelError;
-use crate::infrastructure::factory::command::CommandFactory;
+use crate::domain::factory::command::CommandFactory;
 use crate::domain::service::runner::runner::{AppRunner, Runner};
 use crate::domain::service::executor::executor::CommandExecutor;
 use crate::infrastructure::service::execution::responder::ExitCommandResponder;

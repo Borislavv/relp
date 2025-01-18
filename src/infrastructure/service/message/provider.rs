@@ -4,7 +4,7 @@ use crate::infrastructure::integration;
 use integration::telegram::model::Message;
 use service::message::poller::{LongPoller, Poller};
 
-pub trait Provider: Send {
+pub trait Provider: Send + Sync {
     fn provide(&mut self, ch: SyncSender<Message>);
 }
 

@@ -4,6 +4,7 @@ use integration::telegram;
 use std::sync::{mpsc, Arc};
 use crate::infrastructure::integration;
 use integration::telegram::model::Message;
+use crate::app::model::state::State;
 use crate::domain::error::message::UnknownMessageTypeError;
 
 // Poller is a provider part for "provider-consumer" pattern.
@@ -13,14 +14,16 @@ pub trait Poller {
 
 pub struct LongPoller {
     freq: Duration,
-    telegram: Arc<Box<dyn telegram::facade::FacadeTrait>>
+    state: Arc<Box<dyn State>>,
+    telegram: Arc<Box<dyn telegram::facade::TelegramFacadeTrait>>
 }
 impl LongPoller {
     pub fn new(
         freq: Duration,
-        telegram: Arc<Box<dyn telegram::facade::FacadeTrait>>
+        state: Arc<Box<dyn State>>,
+        telegram: Arc<Box<dyn telegram::facade::TelegramFacadeTrait>>
     ) -> Self {
-        LongPoller { freq, telegram }
+        LongPoller { freq, state, telegram }
     }
 }
 impl LongPoller {
@@ -52,14 +55,17 @@ impl LongPoller {
             };
             Ok(message)
         } else {
-            error!("Another one unknown message type. \
-                Dump the json and check what's new up there.");
+            error!("Another one unknown message type. Dump the json and check what's new up there.");
             Err(UnknownMessageTypeError::new())
         }
     }
 }
 impl Poller for LongPoller {
     fn poll(&self, out: mpsc::SyncSender<Message>) {
+        if self.state.is_closed() {
+            return;
+        }
+
         let mut offset = self.query_offset();
 
         loop {

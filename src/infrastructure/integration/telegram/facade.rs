@@ -3,19 +3,19 @@ use integration::telegram;
 use crate::infrastructure::integration;
 use integration::telegram::model::{GetUpdatesResponse, SendMessageResponse};
 
-pub trait FacadeTrait: telegram::service::ServiceTrait + Send + Sync {}
+pub trait TelegramFacadeTrait: telegram::service::TelegramServiceTrait + Send + Sync {}
 
-pub struct Facade {
-    service: Box<dyn telegram::service::ServiceTrait>,
+pub struct TelegramFacade {
+    service: Box<dyn telegram::service::TelegramServiceTrait>,
 }
 
-impl Facade {
-    pub fn new(service: Box<dyn telegram::service::ServiceTrait>) -> Self {
+impl TelegramFacade {
+    pub fn new(service: Box<dyn telegram::service::TelegramServiceTrait>) -> Self {
         Self { service }
     }
 }
 
-impl telegram::service::ServiceTrait for Facade {
+impl telegram::service::TelegramServiceTrait for TelegramFacade {
     fn get_updates(&self, offset: i64) -> Result<GetUpdatesResponse, Box<dyn Error>> {
         self.service.get_updates(offset)
     }
@@ -24,4 +24,4 @@ impl telegram::service::ServiceTrait for Facade {
     }
 }
 
-impl FacadeTrait for Facade {}
+impl TelegramFacadeTrait for TelegramFacade {}

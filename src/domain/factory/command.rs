@@ -3,7 +3,7 @@ use crate::infrastructure::integration;
 use crate::domain::r#enum::command::Type;
 use integration::telegram::model::Message;
 use crate::infrastructure::model::command::Command;
-use crate::domain::model::command::{Event, EventCmd, ExecCmd, Executable, NotFoundCmd, NoteCmd, PingCmd};
+use crate::domain::model::command::{Event, EventCmd, ExecCmd, Executable, NotFoundCmd, Note, NoteCmd, PingCmd};
 
 const CMD_PREFIX: &str = "/cmd";
 const NOTE_PREFIX: &str = "/note";
@@ -16,16 +16,13 @@ pub trait Factoryer: Send + Sync {
 }
 
 pub struct CommandFactory {
-    note_mutex: Arc<Mutex<Vec<String>>>,
+    note_mutex: Arc<Mutex<Vec<Note>>>,
     event_mutex: Arc<Mutex<Vec<Event>>>,
 }
 
 impl CommandFactory {
-    pub fn new() -> CommandFactory {
-        CommandFactory {
-            note_mutex: Arc::new(Mutex::new(vec![])),
-            event_mutex: Arc::new(Mutex::new(vec![])),
-        }
+    pub fn new(event_mutex: Arc<Mutex<Vec<Event>>>) -> CommandFactory {
+        CommandFactory { note_mutex: Arc::new(Mutex::new(vec![])), event_mutex }
     }
 }
 

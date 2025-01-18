@@ -1,6 +1,7 @@
 use std::sync::Arc;
 use std::error::Error;
 use crate::app::cfg::cfg::Cfg;
+use crate::domain::r#enum::command::Type::Note;
 use crate::infrastructure::model::command::Exit;
 use crate::infrastructure::integration::telegram;
 
@@ -10,11 +11,11 @@ pub trait Responder: Send + Sync {
 
 pub struct ExitCommandResponder {
     cfg: Cfg,
-    telegram: Arc<Box<dyn telegram::facade::FacadeTrait>>,
+    telegram: Arc<Box<dyn telegram::facade::TelegramFacadeTrait>>,
 }
 
 impl ExitCommandResponder {
-    pub fn new(cfg: Cfg, telegram: Arc<Box<dyn telegram::facade::FacadeTrait>>) -> ExitCommandResponder {
+    pub fn new(cfg: Cfg, telegram: Arc<Box<dyn telegram::facade::TelegramFacadeTrait>>) -> ExitCommandResponder {
         ExitCommandResponder { cfg, telegram }
     }
 }
@@ -28,7 +29,10 @@ impl Responder for ExitCommandResponder {
                 ```Stdout:\t{}```
                 ```Stderr:\t{}```
                 ```Code:\t{}```",
-                exit.message.unwrap().text,
+                match exit.message {
+                    Some(msg) => msg.text,
+                    None => "".to_string(),
+                },
                 exit.stdout.as_str(),
                 exit.stderr.as_str(),
                 exit.code,

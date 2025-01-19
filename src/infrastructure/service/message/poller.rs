@@ -55,7 +55,7 @@ impl LongPoller {
             };
             Ok(message)
         } else {
-            error!("Another one unknown message type. Dump the json and check what's new up there.");
+            println!("Another one unknown message type. Dump the json and check what's new up there.");
             Err(UnknownMessageTypeError::new())
         }
     }
@@ -85,7 +85,7 @@ impl Poller for LongPoller {
                         offset = update.update_id + 1;
                     }
                 },
-                Err(e) => error!("Error getting updates: {}", e),
+                Err(e) => println!("Error getting updates: {}", e),
             };
 
             if self.freq > Duration::from_secs(0) {

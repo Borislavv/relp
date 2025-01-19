@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.jared1.repl</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/admin/dev/projects/mine/bot/target/release/repl</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>/tmp/logs/log_repl.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/logs/err_repl.log</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>TG_TOKEN</key>
+        <string>your_telegram_secret_token</string>
+        <key>TG_CHAT_ID</key>
+        <string>123456789</string>
+        <key>TG_POLL_FREQUENCY_SEC</key>
+        <string>5</string>
+    </dict>
+</dict>
+</plist>

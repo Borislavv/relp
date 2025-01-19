@@ -44,7 +44,7 @@ impl Worker for CommandWorker {
                     for (key, event) in events_vec.iter().enumerate() {
                         if Local::now().naive_local() > event.date {
                             if let Err(e) = self.telegram.send_message(self.cfg.chat_id, event.to_string().as_str()) {
-                                error!("domain::service::command:worker: failed to send message while serve Event. Error: {}.", e);
+                                println!("domain::service::command:worker: failed to send message while serve Event. Error: {}.", e);
                                 println!("domain::service::command:worker: failed to send message while serve Event. Error: {}.", e);
                             } else {
                                 events.remove(key);
@@ -53,7 +53,7 @@ impl Worker for CommandWorker {
                     }
                 },
                 Err(e) => {
-                    error!("domain::service::command:worker: failed to get event_mutex lock. Error: {}", e);
+                    println!("domain::service::command:worker: failed to get event_mutex lock. Error: {}", e);
                     println!("domain::service::command:worker: failed to get event_mutex lock. Error: {}", e);
                 }
             };

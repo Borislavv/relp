@@ -1,9 +1,8 @@
 use shlex::split;
 use std::cmp::Ordering;
-use chrono::{Local, NaiveDateTime};
 use std::sync::{Arc, Mutex};
+use chrono::{Local, NaiveDateTime};
 use std::process::{Command as OsCmd};
-use crate::infrastructure::model::command;
 use crate::infrastructure::model::command::{Command, Exit};
 use crate::infrastructure::helper::date::parse_yyyy_mm_dd_hm_from_str;
 
@@ -113,23 +112,45 @@ impl Executable for EventCmd {
         let msg = Some(self.cmd.message.clone());
 
         if self.cmd.str != String::new() {
-            let datetime = match parse_yyyy_mm_dd_hm_from_str(
-                self.cmd.str.clone().as_str(),
-            ) {
-                Ok(date) => date,
-                Err(_) => return Exit::new(1, "".to_string(), "Failed to parse date.".to_string(), msg),
+            let datetime = match parse_yyyy_mm_dd_hm_from_str(self.cmd.str.clone().as_str()) {
+                Ok(datetime) => datetime,
+                Err(err) => return Exit::new(1, "".to_string(), err.to_string(), msg),
             };
 
             self.list.lock().unwrap().push(Event::new(self.cmd.str.clone(), datetime));
 
-            let between = datetime.signed_duration_since(Local::now().naive_local());
+            let between_dates = datetime.signed_duration_since(Local::now().naive_local());
+            let remaining_hours = between_dates.num_hours() - (between_dates.num_days() * 24);
+            let remaining_minutes = between_dates.num_minutes() - (between_dates.num_hours() * 60);
+            let remaining_seconds = between_dates.num_seconds() - (between_dates.num_minutes() * 60);
+
+            let days_string = match between_dates.num_days() {
+                0 => "".to_string(),
+                _ => format!(" {} days", between_dates.num_days()),
+            };
+
+            let hours_string = match remaining_hours {
+                0 => "".to_string(),
+                _ => format!(" {} hours", remaining_hours),
+            };
+
+            let minutes_string = match remaining_minutes {
+                0 => "".to_string(),
+                _ => format!(" {} minutes", remaining_minutes),
+            };
+
+            let seconds_string = match remaining_seconds {
+                0 => "".to_string(),
+                _ => format!(" {} seconds", remaining_seconds),
+            };
 
             Exit::new(
                 0,
-                format!("[{}] Successfully added and will be triggerred in {} weeks {} days \
-                {} hours {} minutes {} seconds.", Local::now().naive_local().format("%Y-%m-%dT%H:%M"),
-                between.num_weeks(), between .num_days(), between.num_hours(),
-                between.num_minutes(), between.num_seconds()),
+                format!(
+                    "[{}] Successfully added and will be triggerred in{}{}{}{}.",
+                        Local::now().naive_local().format("%Y-%m-%dT%H:%M"),
+                        days_string, hours_string, minutes_string, seconds_string,
+                ),
                 "".to_string(),
                 msg,
             )

@@ -6,7 +6,7 @@
     <string>com.jared1.repl</string>
     <key>ProgramArguments</key>
     <array>
-        <string>/Users/admin/dev/projects/mine/bot/target/release/repl</string>
+        <string>/full/absolute/path/to/your/binary/target/release/repl</string>
     </array>
     <key>RunAtLoad</key>
     <true/>

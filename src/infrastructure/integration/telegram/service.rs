@@ -24,7 +24,7 @@ impl TelegramServiceTrait for TelegramService {
         match serde_json::from_str(&data) {
             Ok(data) => Ok(data),
             Err(err) => {
-                error!("Failed to decode getUpdates method json response: {}", data);
+                println!("Failed to decode getUpdates method json response: {}", data);
                 Err(Box::new(err))
             }
         }
@@ -34,7 +34,7 @@ impl TelegramServiceTrait for TelegramService {
         match serde_json::from_str(&data) {
             Ok(data) => Ok(data),
             Err(err) => {
-                error!("Failed to decode sendMessage method json response: {}", data);
+                println!("Failed to decode sendMessage method json response: {}", data);
                 Err(Box::new(err))
             }
         }

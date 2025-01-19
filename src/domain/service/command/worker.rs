@@ -1,11 +1,8 @@
-use std::ops::DerefMut;
-use log::{error, info};
+use chrono::Local;
+use std::sync::{Arc, Mutex};
 use crate::app::cfg::cfg::Cfg;
-use chrono::{Local, NaiveDateTime};
 use crate::app::model::state::State;
 use crate::domain::model::command::Event;
-use std::sync::{Arc, Mutex, TryLockError, TryLockResult};
-use crate::domain::r#enum::command::Type::Event as EventEnum;
 use crate::infrastructure::integration::telegram::facade::TelegramFacadeTrait;
 
 pub trait Worker: Send + Sync {

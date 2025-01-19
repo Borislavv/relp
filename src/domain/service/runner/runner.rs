@@ -1,7 +1,6 @@
 use std::thread;
 use std::thread::JoinHandle;
 use std::sync::{mpsc, Arc, Mutex};
-use log::info;
 use crate::domain::service::command;
 use crate::infrastructure::service::message;
 

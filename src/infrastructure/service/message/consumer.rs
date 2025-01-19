@@ -1,5 +1,4 @@
 use std::sync::Arc;
-use log::{error, info};
 use integration::telegram;
 use std::sync::mpsc::Receiver;
 use crate::app::model::state::State;
@@ -18,7 +17,7 @@ pub struct MessageConsumer {
 }
 
 impl MessageConsumer {
-    pub fn new(executor: Box<dyn Executor>, factory: Box<dyn Factoryer>, state: Arc<Box<dyn State>>,) -> MessageConsumer {
+    pub fn new(executor: Box<dyn Executor>, factory: Box<dyn Factoryer>, state: Arc<Box<dyn State>>) -> MessageConsumer {
         MessageConsumer { executor, factory, state }
     }
 }

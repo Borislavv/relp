@@ -6,7 +6,7 @@ pub fn parse_yyyy_mm_dd_hm_from_str(s: &str)
     -> Result<chrono::NaiveDateTime, DateTimeParseError>
 {
     let regex_ymd_t_hm = Regex::new(r"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})").unwrap();
-    let regex_ymd___hm = Regex::new(r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2})").unwrap();
+    let regex_ymd_hm = Regex::new(r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2})").unwrap();
 
     for capture in regex_ymd_t_hm.captures_iter(s.trim()) {
         if let Ok(date) = chrono::NaiveDateTime::parse_from_str(capture.get(1).unwrap().as_str(), "%Y-%m-%dT%H:%M") {
@@ -14,7 +14,7 @@ pub fn parse_yyyy_mm_dd_hm_from_str(s: &str)
         }
     }
 
-    for capture in regex_ymd___hm.captures_iter(s.trim()) {
+    for capture in regex_ymd_hm.captures_iter(s.trim()) {
         if let Ok(date) = chrono::NaiveDateTime::parse_from_str(capture.get(1).unwrap().as_str(), "%Y-%m-%d %H:%M") {
             return Ok(date);
         }

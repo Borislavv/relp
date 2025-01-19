@@ -1,4 +1,3 @@
-use log::error;
 use std::error::Error;
 use crate::infrastructure::integration;
 use integration::telegram::http::HttpClient;

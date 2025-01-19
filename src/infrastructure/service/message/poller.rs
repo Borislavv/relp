@@ -1,4 +1,3 @@
-use log::error;
 use std::time::Duration;
 use integration::telegram;
 use std::sync::{mpsc, Arc};

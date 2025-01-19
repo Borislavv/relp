@@ -1,7 +1,6 @@
 use std::sync::Arc;
 use std::error::Error;
 use crate::app::cfg::cfg::Cfg;
-use crate::domain::r#enum::command::Type::Note;
 use crate::infrastructure::model::command::Exit;
 use crate::infrastructure::integration::telegram;
 

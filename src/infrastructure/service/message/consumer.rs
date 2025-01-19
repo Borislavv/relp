@@ -31,8 +31,8 @@ impl Consumer for MessageConsumer {
             }
 
             match self.executor.exec(self.factory.make(msg.clone())) {
-                Ok(_) => info!("Command: {} successfully executed.", msg.text),
-                Err(e) => error!("Error: {} occurred while execution command: {}.", e, msg.text),
+                Ok(_) => println!("Command: {} successfully executed.", msg.text),
+                Err(e) => println!("Error: {} occurred while execution command: {}.", e, msg.text),
             }
         }
     }

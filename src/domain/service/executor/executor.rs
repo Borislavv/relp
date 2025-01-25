@@ -1,9 +1,10 @@
-use std::error::Error;
 use crate::domain::model::command::Executable;
 use crate::infrastructure::service::executor::responder::Responder;
+use std::error::Error;
+use std::sync::Arc;
 
 pub trait Executor: Send + Sync {
-    fn exec(&self, cmd: Box<dyn Executable>) -> Result<(), Box<dyn Error>>;
+    fn exec(&self, cmd: Arc<Box<dyn Executable>>) -> Result<(), Box<dyn Error>>;
 }
 pub struct CommandExecutor {
     responder: Box<dyn Responder>,
@@ -14,7 +15,7 @@ impl CommandExecutor {
     }
 }
 impl Executor for CommandExecutor {
-    fn exec(&self, cmd: Box<dyn Executable>) -> Result<(), Box<dyn Error>>  {
+    fn exec(&self, cmd: Arc<Box<dyn Executable>>) -> Result<(), Box<dyn Error>>  {
         self.responder.respond(cmd.exec())
     }
 }

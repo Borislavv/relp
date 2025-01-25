@@ -1,7 +1,7 @@
-use std::error::Error;
-use integration::telegram;
 use crate::infrastructure::integration;
+use integration::telegram;
 use integration::telegram::model::{GetUpdatesResponse, SendMessageResponse};
+use std::error::Error;
 
 pub trait TelegramFacadeTrait: telegram::service::TelegramServiceTrait + Send + Sync {}
 

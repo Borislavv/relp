@@ -1,6 +1,6 @@
 pub mod app;
+pub mod domain;
 pub mod infrastructure;
-mod domain;
 
 use app::app::App;
 use crate::app::app::Kernel;

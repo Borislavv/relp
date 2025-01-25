@@ -1,24 +1,35 @@
+use crate::domain::service::event;
+use crate::infrastructure::helper::date::parse_yyyy_mm_dd_hm_from_str;
+use crate::infrastructure::model::command::{Command, Exit};
+use chrono::{Local, NaiveDateTime};
 use shlex::split;
 use std::cmp::Ordering;
+use std::process::Command as OsCmd;
 use std::sync::{Arc, Mutex};
-use chrono::{Local, NaiveDateTime};
-use std::process::{Command as OsCmd};
-use crate::infrastructure::model::command::{Command, Exit};
-use crate::infrastructure::helper::date::parse_yyyy_mm_dd_hm_from_str;
 
 pub trait Executable {
     fn exec(&self) -> Exit;
 }
 
-pub struct PingCmd {}
+pub struct PingCmd {
+    cmd: Command
+}
 impl PingCmd {
-    pub fn new() -> PingCmd {
-        PingCmd {}
+    pub fn new(cmd: Command) -> PingCmd {
+        PingCmd { cmd }
     }
 }
 impl Executable for PingCmd {
     fn exec(&self) -> Exit {
         Exit::new(0, "pong".to_string(), "".to_string(), None)
+    }
+}
+impl event::model::Event for PingCmd {
+    fn name(&self) -> String {
+        self.cmd.str.clone()
+    }
+    fn is_ready(&self) -> bool {
+        true
     }
 }
 
@@ -67,14 +78,23 @@ impl Executable for ExecCmd {
         }
     }
 }
+impl event::model::Event for ExecCmd {
+    fn name(&self) -> String {
+        self.cmd.str.clone()
+    }
+    fn is_ready(&self) -> bool {
+        true
+    }
+}
 
 pub struct NoteCmd {
     cmd: Command,
     list: Arc<Mutex<Vec<Note>>>,
+    date: NaiveDateTime,
 }
 impl NoteCmd {
-    pub fn new(cmd: Command, list: Arc<Mutex<Vec<Note>>>) -> NoteCmd {
-        NoteCmd { cmd, list }
+    pub fn new(cmd: Command, list: Arc<Mutex<Vec<Note>>>, date: NaiveDateTime) -> NoteCmd {
+        NoteCmd { cmd, list, date }
     }
 }
 impl Executable for NoteCmd {
@@ -97,14 +117,23 @@ impl Executable for NoteCmd {
         }
     }
 }
+impl event::model::Event for NoteCmd {
+    fn name(&self) -> String {
+        self.cmd.str.clone()
+    }
+    fn is_ready(&self) -> bool {
+        self.date < Local::now().naive_local()
+    }
+}
 
 pub struct EventCmd {
     cmd: Command,
     list: Arc<Mutex<Vec<Event>>>,
+    date: NaiveDateTime,
 }
 impl EventCmd {
-    pub fn new(cmd: Command, list: Arc<Mutex<Vec<Event>>>) -> EventCmd {
-        EventCmd { cmd, list }
+    pub fn new(cmd: Command, list: Arc<Mutex<Vec<Event>>>, date: NaiveDateTime) -> EventCmd {
+        EventCmd { cmd, list, date }
     }
 }
 impl Executable for EventCmd {
@@ -178,6 +207,14 @@ impl Executable for EventCmd {
         }
     }
 }
+impl event::model::Event for EventCmd {
+    fn name(&self) -> String {
+        self.cmd.str.clone()
+    }
+    fn is_ready(&self) -> bool {
+        self.date < Local::now().naive_local()
+    }
+}
 
 pub struct NotFoundCmd {
     cmd: Command
@@ -191,6 +228,14 @@ impl Executable for NotFoundCmd {
     fn exec(&self) -> Exit {
         Exit::new(2, "".to_string(),
             format!("Command `{}` not found.", self.cmd.str).to_string(), None)
+    }
+}
+impl event::model::Event for NotFoundCmd {
+    fn name(&self) -> String {
+        self.cmd.str.clone()
+    }
+    fn is_ready(&self) -> bool {
+        true
     }
 }
 

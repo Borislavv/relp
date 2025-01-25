@@ -33,18 +33,11 @@ impl MessageConsumer {
 impl Consumer for MessageConsumer {
     fn consume(&self, msg_ch: Receiver<telegram::model::Message>) {
         for msg in msg_ch {
-            if self.state.is_closed() {
-                return;
-            }
+            if self.state.is_closed() { return; }
 
             let event: Arc<Box<dyn ExecutableEvent>> = Arc::new(self.factory.make(msg.clone()));
 
             self.event_loop.clone().add_event(event);
-
-            match self.executor.exec(executable) {
-                Ok(_) => println!("Command: {} successfully executed.", msg.text),
-                Err(e) => println!("Error: {} occurred while execution command: {}.", e, msg.text),
-            }
         }
     }
 }

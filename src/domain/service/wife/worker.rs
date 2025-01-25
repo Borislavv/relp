@@ -1,6 +1,6 @@
-use std::sync::{Arc, Mutex};
 use crate::domain::service::wife::model::Message;
 use crate::infrastructure::integration::telegram::facade::TelegramFacadeTrait;
+use std::sync::{Arc, Mutex};
 
 pub trait Worker {
     fn run(&mut self);

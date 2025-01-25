@@ -1,8 +1,8 @@
-use std::sync::Arc;
-use std::error::Error;
 use crate::app::cfg::cfg::Cfg;
-use crate::infrastructure::model::command::Exit;
 use crate::infrastructure::integration::telegram;
+use crate::infrastructure::model::command::Exit;
+use std::error::Error;
+use std::sync::Arc;
 
 pub trait Responder: Send + Sync {
     fn respond(&self, exit_state: Exit) -> Result<(), Box<dyn Error>>;

@@ -1,7 +1,7 @@
-use std::error::Error;
-use csv::ReaderBuilder;
 use crate::app::cfg::cfg::Cfg;
 use crate::domain::service::wife::model::Message;
+use csv::ReaderBuilder;
+use std::error::Error;
 
 pub trait Parser {
     fn parse(self) -> Result<Vec<Message>, Box<dyn Error>>;

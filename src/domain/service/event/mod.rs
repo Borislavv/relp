@@ -1,2 +1,2 @@
 pub mod r#loop;
-mod model;
+pub mod model;

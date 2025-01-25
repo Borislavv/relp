@@ -1,12 +1,17 @@
-use chrono::NaiveDateTime;
+use crate::domain::model::command::Executable;
+use std::any::Any;
+use std::sync::mpsc::Sender;
+use std::sync::Arc;
 
-pub trait Event {
-    // key is the event batch identifier for extract (Sender, Receiver)
-    fn key(&self) -> String;
-    // scheduled_for is the date for which created this event
-    fn scheduled_for(&self) -> NaiveDateTime;
+pub trait ExecutableEvent: Executable + Event + Send + Sync {
+    // if the sender is None, then the event loop will execute a cmd himself,
+    // otherwise will send an event through sender.
+    fn sender(&self) -> Option<Arc<Sender<Arc<Box<dyn ExecutableEvent>>>>>;
+}
+
+pub trait Event: Send + Sync + Any {
+    // name returns a name of event
+    fn name(&self) -> String;
     // is_ready automatically checks the current event is ready for sending
     fn is_ready(&self) -> bool;
-    // created_at is the date when the event was born
-    fn created_at(&self) -> NaiveDateTime;
 }

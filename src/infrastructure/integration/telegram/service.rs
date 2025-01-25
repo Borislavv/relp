@@ -1,7 +1,7 @@
-use std::error::Error;
 use crate::infrastructure::integration;
 use integration::telegram::http::HttpClient;
 use integration::telegram::model::{GetUpdatesResponse, SendMessageResponse};
+use std::error::Error;
 
 pub trait TelegramServiceTrait: Send + Sync {
     fn get_updates(&self, offset: i64) -> Result<GetUpdatesResponse, Box<dyn Error>>;

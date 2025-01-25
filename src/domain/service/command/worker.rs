@@ -1,10 +1,11 @@
-use chrono::Local;
-use std::sync::{Arc, Mutex};
 use crate::app::cfg::cfg::Cfg;
 use crate::app::model::state::State;
 use crate::domain::model::command::Event;
 use crate::infrastructure::integration::telegram::facade::TelegramFacadeTrait;
+use chrono::Local;
+use std::sync::{Arc, Mutex};
 
+// The Worker is daemon for serve deferred events.
 pub trait Worker: Send + Sync {
     fn serve(&self);
 }
@@ -41,8 +42,7 @@ impl Worker for CommandWorker {
                     for (key, event) in events_vec.iter().enumerate() {
                         if Local::now().naive_local() > event.date {
                             if let Err(e) = self.telegram.send_message(self.cfg.chat_id, event.to_string().as_str()) {
-                                println!("domain::service::command:worker: failed to send message while serve Event. Error: {}.", e);
-                                println!("domain::service::command:worker: failed to send message while serve Event. Error: {}.", e);
+                                eprintln!("domain::service::command:worker: failed to send message while serve Event. Error: {}.", e);
                             } else {
                                 events.remove(key);
                             }
@@ -50,8 +50,7 @@ impl Worker for CommandWorker {
                     }
                 },
                 Err(e) => {
-                    println!("domain::service::command:worker: failed to get event_mutex lock. Error: {}", e);
-                    println!("domain::service::command:worker: failed to get event_mutex lock. Error: {}", e);
+                    eprintln!("domain::service::command:worker: failed to get event_mutex lock. Error: {}", e);
                 }
             };
 

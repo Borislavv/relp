@@ -1,10 +1,10 @@
-use std::time::Duration;
-use integration::telegram;
-use std::sync::{mpsc, Arc};
-use crate::infrastructure::integration;
-use integration::telegram::model::Message;
 use crate::app::model::state::State;
 use crate::domain::error::message::UnknownMessageTypeError;
+use crate::infrastructure::integration;
+use integration::telegram;
+use integration::telegram::model::Message;
+use std::sync::{mpsc, Arc};
+use std::time::Duration;
 
 // Poller is a provider part for "provider-consumer" pattern.
 pub trait Poller {

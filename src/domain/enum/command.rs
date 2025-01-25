@@ -17,3 +17,14 @@ impl std::fmt::Display for Type {
         }
     }
 }
+impl Type {
+    fn to_string(&self) -> String {
+        match self {
+            Type::Ping => String::from("Ping"),
+            Type::Exec => String::from("Exec"),
+            Type::Note => String::from("Note"),
+            Type::Event => String::from("Event"),
+            Type::NotFound => String::from("NotFound"),
+        }
+    }
+}

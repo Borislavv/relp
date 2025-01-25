@@ -1,6 +1,6 @@
-use std::time::Duration;
 use reqwest::blocking::{Client as ReqwestClient, Response};
 use reqwest::Error;
+use std::time::Duration;
 
 const TELEGRAM_API_URL: &str = "https://api.telegram.org";
 const TELEGRAM_API_SEND_MESSAGE_METHOD: &str = "sendMessage";

@@ -52,7 +52,8 @@ impl Runner for AppRunner {
         }));
 
         threads.push(thread::spawn(move || {
-            // starts a long poller which asks telegram message updates and provides them into output channel.
+            // starts a long poller which asks telegram message updates and provides them
+            // into output channel.
             provider.lock().unwrap().provide(sender);
         }));
 

@@ -1,4 +1,6 @@
-use crate::infrastructure::broadcasting::mpsc::error::{AlreadyExistsError, NoEntryWasFoundError, SendOnClosedChannelError};
+use crate::infrastructure::broadcasting::mpsc::error::{
+    AlreadyExistsError, NoEntryWasFoundError, SendOnClosedChannelError,
+};
 use std::collections::HashMap;
 use std::sync::mpsc::{Receiver, Sender};
 use std::sync::{mpsc, Arc, Mutex};
@@ -18,14 +20,16 @@ pub struct Chan<T> {
     map: Arc<Mutex<HashMap<String, Arc<Sender<T>>>>>,
 }
 
-impl <T> Chan<T> {
+impl<T> Chan<T> {
     pub fn new() -> Chan<T> {
         let map: HashMap<String, Arc<Sender<T>>> = HashMap::new();
-        Self { map: Arc::new(Mutex::new(map)) }
+        Self {
+            map: Arc::new(Mutex::new(map)),
+        }
     }
 }
 
-impl <T: Send + Sync + Clone> Channel<T> for Chan<T> {
+impl<T: Send + Sync + Clone> Channel<T> for Chan<T> {
     fn add(&self, key: String) -> Result<Receiver<T>, AlreadyExistsError> {
         let (sender, receiver) = mpsc::channel::<T>();
         // unwrap here is safe due to only already exists concurrency problems can have affect it
@@ -33,7 +37,9 @@ impl <T: Send + Sync + Clone> Channel<T> for Chan<T> {
         let mut map = self.map.lock().unwrap();
 
         if map.contains_key(&key) {
-            return Err(AlreadyExistsError::new("map key already exists".to_string()));
+            return Err(AlreadyExistsError::new(
+                "map key already exists".to_string(),
+            ));
         }
 
         map.insert(key, Arc::new(sender));

@@ -2,8 +2,7 @@ use std::error::Error;
 use std::fmt;
 
 #[derive(Debug)]
-pub struct NotBootedKernelError {
-}
+pub struct NotBootedKernelError {}
 
 impl NotBootedKernelError {
     pub fn new() -> NotBootedKernelError {
@@ -17,5 +16,4 @@ impl fmt::Display for NotBootedKernelError {
     }
 }
 
-impl Error for NotBootedKernelError {
-}
+impl Error for NotBootedKernelError {}

@@ -1,5 +1,5 @@
 use crate::app::cfg::cfg::Cfg;
-use crate::domain::service::wife::model::Message;
+use crate::domain::model::wife::Message;
 use csv::ReaderBuilder;
 use std::error::Error;
 
@@ -13,7 +13,9 @@ pub struct MessageParser {
 
 impl MessageParser {
     pub fn new(cfg: Cfg) -> Self {
-        Self { filepath: cfg.wife_filepath }
+        Self {
+            filepath: cfg.wife_filepath,
+        }
     }
 }
 

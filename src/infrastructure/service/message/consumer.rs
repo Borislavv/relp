@@ -1,6 +1,6 @@
 use crate::app::model::state::State;
 use crate::domain::factory::command::Factoryer;
-use crate::domain::service::event::model::ExecutableEvent;
+use crate::domain::model::event::ExecutableEvent;
 use crate::domain::service::event::r#loop::EventLoop;
 use crate::domain::service::executor::executor::Executor;
 use crate::infrastructure::integration;
@@ -13,7 +13,6 @@ pub trait Consumer: Send + Sync {
 }
 
 pub struct MessageConsumer {
-    executor: Box<dyn Executor>,
     factory: Box<dyn Factoryer>,
     state: Arc<Box<dyn State>>,
     event_loop: Arc<Box<dyn EventLoop>>,
@@ -21,19 +20,24 @@ pub struct MessageConsumer {
 
 impl MessageConsumer {
     pub fn new(
-        executor: Box<dyn Executor>,
         factory: Box<dyn Factoryer>,
         state: Arc<Box<dyn State>>,
-        event_loop: Arc<Box<dyn EventLoop>>
+        event_loop: Arc<Box<dyn EventLoop>>,
     ) -> MessageConsumer {
-        MessageConsumer { executor, factory, state, event_loop }
+        MessageConsumer {
+            factory,
+            state,
+            event_loop,
+        }
     }
 }
 
 impl Consumer for MessageConsumer {
     fn consume(&self, msg_ch: Receiver<telegram::model::Message>) {
         for msg in msg_ch {
-            if self.state.is_closed() { return; }
+            if self.state.is_closed() {
+                return;
+            }
 
             let event: Arc<Box<dyn ExecutableEvent>> = Arc::new(self.factory.make(msg.clone()));
 

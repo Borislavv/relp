@@ -1,4 +1,4 @@
-use crate::domain::service::wife::model::Message;
+use crate::domain::model::wife::Message;
 use crate::infrastructure::integration::telegram::facade::TelegramFacadeTrait;
 use std::sync::{Arc, Mutex};
 
@@ -12,15 +12,16 @@ pub struct WifeWorker {
 }
 
 impl WifeWorker {
-    pub fn new(messages: Arc<Mutex<Vec<Message>>>, telegram: Arc<Box<dyn TelegramFacadeTrait>>) -> WifeWorker {
+    pub fn new(
+        messages: Arc<Mutex<Vec<Message>>>,
+        telegram: Arc<Box<dyn TelegramFacadeTrait>>,
+    ) -> WifeWorker {
         WifeWorker { messages, telegram }
     }
 }
 
 impl Worker for WifeWorker {
     fn run(&mut self) {
-        loop {
-
-        }
+        loop {}
     }
 }

@@ -14,21 +14,31 @@ pub trait Poller {
 pub struct LongPoller {
     freq: Duration,
     state: Arc<Box<dyn State>>,
-    telegram: Arc<Box<dyn telegram::facade::TelegramFacadeTrait>>
+    telegram: Arc<Box<dyn telegram::facade::TelegramFacadeTrait>>,
 }
 impl LongPoller {
     pub fn new(
         freq: Duration,
         state: Arc<Box<dyn State>>,
-        telegram: Arc<Box<dyn telegram::facade::TelegramFacadeTrait>>
+        telegram: Arc<Box<dyn telegram::facade::TelegramFacadeTrait>>,
     ) -> Self {
-        LongPoller { freq, state, telegram }
+        LongPoller {
+            freq,
+            state,
+            telegram,
+        }
     }
 }
 impl LongPoller {
     // returns a new offset (a last msg id + 1)
     fn query_offset(&self) -> i64 {
-        let response = self.telegram.get_updates(0).unwrap();
+        let response = match self.telegram.get_updates(0) {
+            Ok(r) => r,
+            Err(e) => {
+                eprintln!("{}", e);
+                return 0;
+            }
+        };
 
         let offset: i64;
         if let Some(l) = response.result.last() {
@@ -41,7 +51,7 @@ impl LongPoller {
     }
     fn extract_msg(
         msg: Option<Message>,
-        edited_msg: Option<Message>
+        edited_msg: Option<Message>,
     ) -> Result<Message, UnknownMessageTypeError> {
         if msg.is_some() {
             let Some(message) = msg else {
@@ -54,7 +64,9 @@ impl LongPoller {
             };
             Ok(message)
         } else {
-            println!("Another one unknown message type. Dump the json and check what's new up there.");
+            println!(
+                "Another one unknown message type. Dump the json and check what's new up there."
+            );
             Err(UnknownMessageTypeError::new())
         }
     }
@@ -73,9 +85,7 @@ impl Poller for LongPoller {
                     for update in r.result {
                         // joining of message and edited message
                         // (will be selected just one of which is not None)
-                        let msg = Self::extract_msg(
-                            update.message, update.edited_message
-                        ).unwrap();
+                        let msg = Self::extract_msg(update.message, update.edited_message).unwrap();
 
                         // send the message to the other side
                         out.send(msg).unwrap();
@@ -83,7 +93,7 @@ impl Poller for LongPoller {
                         // calculate a new offset
                         offset = update.update_id + 1;
                     }
-                },
+                }
                 Err(e) => println!("Error getting updates: {}", e),
             };
 

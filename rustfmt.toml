@@ -1,0 +1,20 @@
+# Удаляет неиспользуемые импорты
+remove_unused_imports = true
+
+# Указывает ширину строки для форматирования
+max_width = 160
+
+# Настройка стиля отступов
+fn_single_line = false
+struct_single_line = false
+enum_single_line = false
+
+# Устанавливает минимальную длину норвегов для многострочных выражений
+chain_breaks = "Always"
+
+# Другие полезные настройки
+prefer_single_line_let = false
+# Добавляет пробелы после запятых
+comma_single_line = true
+# Добавляет пробелы в объектах
+format_args = true

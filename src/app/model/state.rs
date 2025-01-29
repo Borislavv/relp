@@ -10,7 +10,9 @@ pub struct AppState {
 }
 impl AppState {
     pub fn new() -> AppState {
-        AppState { c: AtomicBool::new(false) }
+        AppState {
+            c: AtomicBool::new(false),
+        }
     }
 }
 impl State for AppState {

@@ -1,17 +1,19 @@
 use crate::app;
-use crate::domain::service::event::model::{Event, ExecutableEvent};
+use crate::domain::model::command::Executable;
+use crate::domain::model::event::{Event, ExecutableEvent};
+use crate::domain::r#enum::event::Repeat;
 use crate::domain::service::executor::executor::Executor;
 use crate::infrastructure::broadcasting::mpsc::channel::Channel;
 use std::sync::{Arc, Mutex};
 
 pub trait EventLoop: Send + Sync {
     fn serve(&self);
-    fn add_event(&self, event: Arc<Box<dyn Event>>);
+    fn add_event(&self, event: Arc<Box<dyn ExecutableEvent>>);
 }
 
 pub struct CommandEventLoop {
     state: Arc<Box<dyn app::model::state::State>>,
-    events: Mutex<Vec<Arc<Box<dyn ExecutableEvent>>>>,
+    events: Arc<Mutex<Vec<Arc<Box<dyn ExecutableEvent>>>>>,
     channel: Box<dyn Channel<Arc<Box<dyn ExecutableEvent>>>>,
     executor: Arc<Box<dyn Executor>>,
 }
@@ -19,10 +21,33 @@ pub struct CommandEventLoop {
 impl CommandEventLoop {
     pub fn new(
         state: Arc<Box<dyn app::model::state::State>>,
-        channel: Box<dyn Channel<Arc<Box<dyn Event>>>>,
-        executor: Arc<Box<dyn Executor>>
+        channel: Box<dyn Channel<Arc<Box<dyn ExecutableEvent>>>>,
+        executor: Arc<Box<dyn Executor>>,
     ) -> Self {
-        Self { state, events: Mutex::new(vec![]), channel, executor }
+        Self {
+            state,
+            events: Arc::new(Mutex::new(vec![])),
+            channel,
+            executor,
+        }
+    }
+}
+
+impl CommandEventLoop {
+    fn handle_event_repeats(&self, event: Arc<Box<dyn ExecutableEvent>>) {
+        match event.repeats() {
+            Repeat::Once => {}
+            Repeat::Always => {
+                // return an event back always
+                self.events.lock().unwrap().push(event);
+            }
+            Repeat::Times(n) => {
+                if n > 0 {
+                    // return an event back N times
+                    self.events.lock().unwrap().push(event);
+                }
+            }
+        }
     }
 }
 
@@ -33,7 +58,9 @@ impl EventLoop for CommandEventLoop {
     fn serve(&self) {
         loop {
             // check the application status is still active
-            if self.state.is_closed() { return; }
+            if self.state.is_closed() {
+                return;
+            }
 
             // (vec![]).drain(0..) -> removes all elements from vector, if an event is not ready, you need put it back
             for event in self.events.lock().unwrap().drain(0..) {
@@ -41,14 +68,28 @@ impl EventLoop for CommandEventLoop {
                     match event.sender() {
                         Some(readyEvent) => {
                             // unwrap is safe if you do not have a failures in another thread which consume from receiver
-                            readyEvent.send(event).unwrap()
-                        },
+                            readyEvent.send(event.clone()).unwrap();
+                            // back event to the heap if necessary
+                            self.handle_event_repeats(event);
+                        }
                         None => {
                             match self.executor.exec(event.clone()) {
-                                Ok(_) => println!("Command: {} successfully executed.", event.name()),
-                                Err(e) => println!("Error: {} occurred while execution command: {}.", e, event.name()),
+                                Ok(_) => {
+                                    let name = event.name().to_string();
+                                    // back event to the heap if necessary
+                                    self.handle_event_repeats(event);
+                                    println!("Command: {} successfully executed.", name)
+                                }
+                                Err(e) => {
+                                    let name = event.name().to_string();
+                                    self.events.lock().unwrap().push(event);
+                                    println!(
+                                        "Error: {} occurred while execution command: {}.",
+                                        e, name
+                                    )
+                                }
                             };
-                        },
+                        }
                     };
                 } else {
                     // return the event which is not ready back to the vector

@@ -10,12 +10,12 @@ pub struct Command {
     pub message: Message,
 }
 impl Command {
-    pub fn new(
-        str: String,
-        r#type: Type,
-        message: Message,
-    ) -> Self {
-        Self { str, r#type, message }
+    pub fn new(str: String, r#type: Type, message: Message) -> Self {
+        Self {
+            str,
+            r#type,
+            message,
+        }
     }
 }
 
@@ -28,6 +28,11 @@ pub struct Exit {
 }
 impl Exit {
     pub fn new(code: i32, stdout: String, stderr: String, message: Option<Message>) -> Self {
-        Self { code, stdout, stderr, message }
+        Self {
+            code,
+            stdout,
+            stderr,
+            message,
+        }
     }
 }

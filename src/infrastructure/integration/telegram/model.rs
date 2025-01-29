@@ -47,4 +47,3 @@ pub struct Chat {
     pub username: String,
     pub r#type: String,
 }
-

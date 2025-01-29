@@ -1,10 +1,15 @@
-use crate::domain::service::event;
+use crate::domain::model;
+use crate::domain::model::event::ExecutableEvent;
+use crate::domain::r#enum::event::Repeat;
 use crate::infrastructure::helper::date::parse_yyyy_mm_dd_hm_from_str;
 use crate::infrastructure::model::command::{Command, Exit};
 use chrono::{Local, NaiveDateTime};
 use shlex::split;
 use std::cmp::Ordering;
 use std::process::Command as OsCmd;
+use std::sync::atomic::AtomicI64;
+use std::sync::atomic::Ordering::SeqCst;
+use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
 
 pub trait Executable {
@@ -12,29 +17,48 @@ pub trait Executable {
 }
 
 pub struct PingCmd {
-    cmd: Command
+    cmd: Command,
+    atm: AtomicI64,
 }
 impl PingCmd {
     pub fn new(cmd: Command) -> PingCmd {
-        PingCmd { cmd }
+        PingCmd {
+            cmd,
+            atm: AtomicI64::new(3),
+        }
     }
 }
 impl Executable for PingCmd {
     fn exec(&self) -> Exit {
-        Exit::new(0, "pong".to_string(), "".to_string(), None)
+        let remaining_repeats = self.atm.fetch_sub(1, SeqCst);
+
+        let mut msg = "pong".to_string();
+        if remaining_repeats % 2 == 0 {
+            msg = "ping".to_string();
+        }
+
+        Exit::new(0, msg, "".to_string(), None)
     }
 }
-impl event::model::Event for PingCmd {
+impl model::event::Event for PingCmd {
     fn name(&self) -> String {
         self.cmd.str.clone()
     }
     fn is_ready(&self) -> bool {
         true
     }
+    fn repeats(&self) -> Repeat {
+        Repeat::Times(self.atm.load(SeqCst))
+    }
+}
+impl ExecutableEvent for PingCmd {
+    fn sender(&self) -> Option<Arc<Sender<Arc<Box<dyn ExecutableEvent>>>>> {
+        None
+    }
 }
 
 pub struct ExecCmd {
-    cmd: Command
+    cmd: Command,
 }
 impl ExecCmd {
     pub fn new(cmd: Command) -> ExecCmd {
@@ -43,14 +67,16 @@ impl ExecCmd {
 }
 impl Executable for ExecCmd {
     fn exec(&self) -> Exit {
-        let cmd_parts: &mut Vec<String> = &mut split(self.cmd.str.as_str())
-            .expect("Failed to split str command.");
+        let cmd_parts: &mut Vec<String> =
+            &mut split(self.cmd.str.as_str()).expect("Failed to split str command.");
 
         if cmd_parts.len() == 0 {
-            return Exit::new(3, "".to_string(),
+            return Exit::new(
+                3,
+                "".to_string(),
                 "The command is empty, please check the send data and try again.".to_string(),
                 None,
-            )
+            );
         }
 
         let cmd_name = cmd_parts.remove(0);
@@ -59,70 +85,86 @@ impl Executable for ExecCmd {
             .output(); // run process;
 
         match output {
-            Ok(output) => {
-                Exit::new(
-                    output.status.code().unwrap(),
-                    String::from_utf8(output.stdout).unwrap(),
-                    String::from_utf8(output.stderr).unwrap(),
-                    Some(self.cmd.message.clone()),
-                )
-            },
-            Err(error) => {
-                Exit::new(
-                    1,
-                    "".to_string(),
-                    error.to_string(),
-                    Some(self.cmd.message.clone()),
-                )
-            }
+            Ok(output) => Exit::new(
+                output.status.code().unwrap(),
+                String::from_utf8(output.stdout).unwrap(),
+                String::from_utf8(output.stderr).unwrap(),
+                Some(self.cmd.message.clone()),
+            ),
+            Err(error) => Exit::new(
+                1,
+                "".to_string(),
+                error.to_string(),
+                Some(self.cmd.message.clone()),
+            ),
         }
     }
 }
-impl event::model::Event for ExecCmd {
+impl model::event::Event for ExecCmd {
     fn name(&self) -> String {
         self.cmd.str.clone()
     }
     fn is_ready(&self) -> bool {
         true
     }
+    fn repeats(&self) -> Repeat {
+        Repeat::Once
+    }
+}
+impl ExecutableEvent for ExecCmd {
+    fn sender(&self) -> Option<Arc<Sender<Arc<Box<dyn ExecutableEvent>>>>> {
+        None
+    }
 }
 
 pub struct NoteCmd {
     cmd: Command,
     list: Arc<Mutex<Vec<Note>>>,
-    date: NaiveDateTime,
 }
 impl NoteCmd {
-    pub fn new(cmd: Command, list: Arc<Mutex<Vec<Note>>>, date: NaiveDateTime) -> NoteCmd {
-        NoteCmd { cmd, list, date }
+    pub fn new(cmd: Command, list: Arc<Mutex<Vec<Note>>>) -> NoteCmd {
+        NoteCmd { cmd, list }
     }
 }
 impl Executable for NoteCmd {
     fn exec(&self) -> Exit {
         let msg = Some(self.cmd.message.clone());
         if self.cmd.str != String::new() {
-            self.list.lock().unwrap().push(Note::new(self.cmd.str.clone()));
+            self.list
+                .lock()
+                .unwrap()
+                .push(Note::new(self.cmd.str.clone()));
             Exit::new(0, "Successfully added.".to_string(), "".to_string(), msg)
         } else {
             Exit::new(
                 0,
-                self.list.lock().unwrap()
+                self.list
+                    .lock()
+                    .unwrap()
                     .iter()
                     .map(ToString::to_string)
                     .collect::<Vec<String>>()
                     .join("\n"),
                 "".to_string(),
-                msg
+                msg,
             )
         }
     }
 }
-impl event::model::Event for NoteCmd {
+impl model::event::Event for NoteCmd {
     fn name(&self) -> String {
         self.cmd.str.clone()
     }
     fn is_ready(&self) -> bool {
-        self.date < Local::now().naive_local()
+        true
+    }
+    fn repeats(&self) -> Repeat {
+        Repeat::Once
+    }
+}
+impl ExecutableEvent for NoteCmd {
+    fn sender(&self) -> Option<Arc<Sender<Arc<Box<dyn ExecutableEvent>>>>> {
+        None
     }
 }
 
@@ -130,10 +172,32 @@ pub struct EventCmd {
     cmd: Command,
     list: Arc<Mutex<Vec<Event>>>,
     date: NaiveDateTime,
+    exit: Option<Exit>,
 }
 impl EventCmd {
-    pub fn new(cmd: Command, list: Arc<Mutex<Vec<Event>>>, date: NaiveDateTime) -> EventCmd {
-        EventCmd { cmd, list, date }
+    pub fn new(cmd: Command, list: Arc<Mutex<Vec<Event>>>) -> EventCmd {
+        EventCmd {
+            cmd: cmd.clone(),
+            list: list.clone(),
+            date: match parse_yyyy_mm_dd_hm_from_str(cmd.str.clone().as_str()) {
+                Ok(datetime) => datetime,
+                Err(err) => {
+                    let exit = Some(Exit::new(
+                        1,
+                        "".to_string(),
+                        err.to_string(),
+                        Some(cmd.message.clone()),
+                    ));
+                    return EventCmd {
+                        cmd,
+                        list,
+                        date: Local::now().naive_local(),
+                        exit,
+                    };
+                }
+            },
+            exit: None,
+        }
     }
 }
 impl Executable for EventCmd {
@@ -146,12 +210,16 @@ impl Executable for EventCmd {
                 Err(err) => return Exit::new(1, "".to_string(), err.to_string(), msg),
             };
 
-            self.list.lock().unwrap().push(Event::new(self.cmd.str.clone(), datetime));
+            self.list
+                .lock()
+                .unwrap()
+                .push(Event::new(self.cmd.str.clone(), datetime));
 
             let between_dates = datetime.signed_duration_since(Local::now().naive_local());
             let remaining_hours = between_dates.num_hours() - (between_dates.num_days() * 24);
             let remaining_minutes = between_dates.num_minutes() - (between_dates.num_hours() * 60);
-            let remaining_seconds = between_dates.num_seconds() - (between_dates.num_minutes() * 60);
+            let remaining_seconds =
+                between_dates.num_seconds() - (between_dates.num_minutes() * 60);
 
             let days_string = match between_dates.num_days() {
                 0 => "".to_string(),
@@ -177,8 +245,11 @@ impl Executable for EventCmd {
                 0,
                 format!(
                     "[{}] Successfully added and will be triggerred in{}{}{}{}.",
-                        Local::now().naive_local().format("%Y-%m-%dT%H:%M"),
-                        days_string, hours_string, minutes_string, seconds_string,
+                    Local::now().naive_local().format("%Y-%m-%dT%H:%M"),
+                    days_string,
+                    hours_string,
+                    minutes_string,
+                    seconds_string,
                 ),
                 "".to_string(),
                 msg,
@@ -196,7 +267,9 @@ impl Executable for EventCmd {
 
             Exit::new(
                 0,
-                self.list.lock().unwrap()
+                self.list
+                    .lock()
+                    .unwrap()
                     .iter()
                     .map(ToString::to_string)
                     .collect::<Vec<String>>()
@@ -207,17 +280,25 @@ impl Executable for EventCmd {
         }
     }
 }
-impl event::model::Event for EventCmd {
+impl model::event::Event for EventCmd {
     fn name(&self) -> String {
         self.cmd.str.clone()
     }
     fn is_ready(&self) -> bool {
         self.date < Local::now().naive_local()
     }
+    fn repeats(&self) -> Repeat {
+        Repeat::Once
+    }
+}
+impl ExecutableEvent for EventCmd {
+    fn sender(&self) -> Option<Arc<Sender<Arc<Box<dyn ExecutableEvent>>>>> {
+        None
+    }
 }
 
 pub struct NotFoundCmd {
-    cmd: Command
+    cmd: Command,
 }
 impl NotFoundCmd {
     pub fn new(cmd: Command) -> NotFoundCmd {
@@ -226,16 +307,28 @@ impl NotFoundCmd {
 }
 impl Executable for NotFoundCmd {
     fn exec(&self) -> Exit {
-        Exit::new(2, "".to_string(),
-            format!("Command `{}` not found.", self.cmd.str).to_string(), None)
+        Exit::new(
+            2,
+            "".to_string(),
+            format!("Command `{}` not found.", self.cmd.str).to_string(),
+            None,
+        )
     }
 }
-impl event::model::Event for NotFoundCmd {
+impl model::event::Event for NotFoundCmd {
     fn name(&self) -> String {
         self.cmd.str.clone()
     }
     fn is_ready(&self) -> bool {
         true
+    }
+    fn repeats(&self) -> Repeat {
+        Repeat::Once
+    }
+}
+impl ExecutableEvent for NotFoundCmd {
+    fn sender(&self) -> Option<Arc<Sender<Arc<Box<dyn ExecutableEvent>>>>> {
+        None
     }
 }
 
@@ -256,7 +349,7 @@ impl std::fmt::Display for Note {
 #[derive(Clone, Default)]
 pub struct Event {
     pub text: String,
-    pub date: NaiveDateTime
+    pub date: NaiveDateTime,
 }
 impl Event {
     pub fn new(text: String, date: NaiveDateTime) -> Self {

@@ -1,3 +1,2 @@
-pub mod worker;
-mod model;
 mod parser;
+pub mod worker;

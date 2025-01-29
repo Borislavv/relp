@@ -9,7 +9,6 @@ dependencies = [
  "chrono",
  "csv",
  "env_logger",
- "log",
  "regex",
  "reqwest",
  "serde",

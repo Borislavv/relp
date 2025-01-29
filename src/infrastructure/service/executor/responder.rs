@@ -14,7 +14,10 @@ pub struct ExitCommandResponder {
 }
 
 impl ExitCommandResponder {
-    pub fn new(cfg: Cfg, telegram: Arc<Box<dyn telegram::facade::TelegramFacadeTrait>>) -> ExitCommandResponder {
+    pub fn new(
+        cfg: Cfg,
+        telegram: Arc<Box<dyn telegram::facade::TelegramFacadeTrait>>,
+    ) -> ExitCommandResponder {
         ExitCommandResponder { cfg, telegram }
     }
 }
@@ -35,7 +38,8 @@ impl Responder for ExitCommandResponder {
                 exit.stdout.as_str(),
                 exit.stderr.as_str(),
                 exit.code,
-            ).as_str()
+            )
+            .as_str(),
         ) {
             Ok(_) => Ok(()),
             Err(e) => Err(e),

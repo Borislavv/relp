@@ -27,9 +27,7 @@ impl HttpClient for Client {
         ReqwestClient::new()
             .post(format!(
                 "{}/bot{}/{}?parse_mode=Markdown",
-                TELEGRAM_API_URL,
-                self.token,
-                TELEGRAM_API_SEND_MESSAGE_METHOD
+                TELEGRAM_API_URL, self.token, TELEGRAM_API_SEND_MESSAGE_METHOD
             ))
             .timeout(self.timeout)
             .json(&serde_json::json!({
@@ -46,10 +44,7 @@ impl HttpClient for Client {
             .unwrap()
             .get(format!(
                 "{}/bot{}/{}?offset={}",
-                TELEGRAM_API_URL,
-                self.token,
-                TELEGRAM_API_FETCH_MESSAGES_METHOD,
-                offset
+                TELEGRAM_API_URL, self.token, TELEGRAM_API_FETCH_MESSAGES_METHOD, offset
             ))
             .send()
     }

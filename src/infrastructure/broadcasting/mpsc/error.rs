@@ -2,8 +2,7 @@ use std::error::Error;
 use std::fmt;
 
 #[derive(Debug)]
-pub struct NoEntryWasFoundError {
-}
+pub struct NoEntryWasFoundError {}
 impl NoEntryWasFoundError {
     pub fn new() -> NoEntryWasFoundError {
         NoEntryWasFoundError {}
@@ -14,8 +13,7 @@ impl fmt::Display for NoEntryWasFoundError {
         write!(f, "No entry was found by given key.")
     }
 }
-impl Error for NoEntryWasFoundError {
-}
+impl Error for NoEntryWasFoundError {}
 
 #[derive(Debug)]
 pub struct SendOnClosedChannelError {
@@ -28,11 +26,14 @@ impl SendOnClosedChannelError {
 }
 impl fmt::Display for SendOnClosedChannelError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Send data on closed channel (the receiver side has gone away). Previous: {}", self.previous)
+        write!(
+            f,
+            "Send data on closed channel (the receiver side has gone away). Previous: {}",
+            self.previous
+        )
     }
 }
-impl Error for SendOnClosedChannelError {
-}
+impl Error for SendOnClosedChannelError {}
 
 #[derive(Debug)]
 pub struct AlreadyExistsError {
@@ -45,8 +46,11 @@ impl AlreadyExistsError {
 }
 impl fmt::Display for AlreadyExistsError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "The passed key already present in the map. Previous: {}", self.previous)
+        write!(
+            f,
+            "The passed key already present in the map. Previous: {}",
+            self.previous
+        )
     }
 }
-impl Error for AlreadyExistsError {
-}
+impl Error for AlreadyExistsError {}

@@ -26,7 +26,13 @@ impl AppRunner {
         provider: Arc<Mutex<Box<dyn message::provider::Provider>>>,
         consumer: Arc<Mutex<Box<dyn message::consumer::Consumer>>>,
     ) -> AppRunner {
-        AppRunner { cfg, event_loop, worker, provider, consumer }
+        AppRunner {
+            cfg,
+            event_loop,
+            worker,
+            provider,
+            consumer,
+        }
     }
 }
 

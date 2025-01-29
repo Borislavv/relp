@@ -13,7 +13,8 @@ pub struct SendMessageResponse {
     pub result: Message,
 }
 
-// Update is a single message structure. Telegram sends a list of Update structs.
+// Update is a single message structure. Telegram sends a list of Update
+// structs.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Update {
     pub update_id: i64,

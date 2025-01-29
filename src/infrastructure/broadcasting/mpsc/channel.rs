@@ -8,7 +8,8 @@ use std::sync::{mpsc, Arc, Mutex};
 pub trait Channel<T: Send + Sync + Clone>: Send + Sync {
     // adds a new one receiver by key
     fn add(&self, key: String) -> Result<Receiver<T>, AlreadyExistsError>;
-    // sends the data to one receiver by key or to all receivers in case when key is None
+    // sends the data to one receiver by key or to all receivers in case when key is
+    // None
     fn send(&self, key: Option<String>, data: T) -> Result<(), SendOnClosedChannelError>;
     // removes the target receiver by key
     fn remove(&self, key: String);
@@ -32,8 +33,9 @@ impl<T> Chan<T> {
 impl<T: Send + Sync + Clone> Channel<T> for Chan<T> {
     fn add(&self, key: String) -> Result<Receiver<T>, AlreadyExistsError> {
         let (sender, receiver) = mpsc::channel::<T>();
-        // unwrap here is safe due to only already exists concurrency problems can have affect it
-        // for example, if other thread was locked mutex and had failed without unlocking it (deadlock).
+        // unwrap here is safe due to only already exists concurrency problems can have
+        // affect it for example, if other thread was locked mutex and had
+        // failed without unlocking it (deadlock).
         let mut map = self.map.lock().unwrap();
 
         if map.contains_key(&key) {

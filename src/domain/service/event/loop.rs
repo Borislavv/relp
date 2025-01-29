@@ -52,9 +52,11 @@ impl CommandEventLoop {
 }
 
 impl EventLoop for CommandEventLoop {
-    // Method serve is infinitely iterating over events and checks whether one or more events
-    // will be ready for send to them Receivers or execute at place (depends on if an event has a sender into or not).
-    // Technical details: have a timeout between each new iteration in 1 second due to decrease CPU consumption.
+    // Method serve is infinitely iterating over events and checks whether one or
+    // more events will be ready for send to them Receivers or execute at place
+    // (depends on if an event has a sender into or not). Technical details:
+    // have a timeout between each new iteration in 1 second due to decrease CPU
+    // consumption.
     fn serve(&self) {
         loop {
             // check the application status is still active
@@ -62,12 +64,14 @@ impl EventLoop for CommandEventLoop {
                 return;
             }
 
-            // (vec![]).drain(0..) -> removes all elements from vector, if an event is not ready, you need put it back
+            // (vec![]).drain(0..) -> removes all elements from vector, if an event is not
+            // ready, you need put it back
             for event in self.events.lock().unwrap().drain(0..) {
                 if event.is_ready() {
                     match event.sender() {
                         Some(readyEvent) => {
-                            // unwrap is safe if you do not have a failures in another thread which consume from receiver
+                            // unwrap is safe if you do not have a failures in another thread which consume
+                            // from receiver
                             readyEvent.send(event.clone()).unwrap();
                             // back event to the heap if necessary
                             self.handle_event_repeats(event);
@@ -101,8 +105,8 @@ impl EventLoop for CommandEventLoop {
         }
     }
 
-    // add_event - pushes new event into the loop event heap and creates a new one pair
-    // of Sender and Receiver for event.key() if necessary of course.
+    // add_event - pushes new event into the loop event heap and creates a new one
+    // pair of Sender and Receiver for event.key() if necessary of course.
     fn add_event(&self, event: Arc<Box<dyn ExecutableEvent>>) {
         // handle lock and push new event into the loop
         self.events.lock().unwrap().push(event);

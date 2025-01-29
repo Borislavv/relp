@@ -22,9 +22,14 @@ impl CommandWorker {
         cfg: Cfg,
         state: Arc<Box<dyn State>>,
         event_mutex: Arc<Mutex<Vec<Event>>>,
-        telegram: Arc<Box<dyn TelegramFacadeTrait>>) -> Self
-    {
-        Self { cfg, state, event_mutex, telegram }
+        telegram: Arc<Box<dyn TelegramFacadeTrait>>,
+    ) -> Self {
+        Self {
+            cfg,
+            state,
+            event_mutex,
+            telegram,
+        }
     }
 }
 
@@ -41,14 +46,17 @@ impl Worker for CommandWorker {
                     events_vec.clone_from_slice(events.as_slice());
                     for (key, event) in events_vec.iter().enumerate() {
                         if Local::now().naive_local() > event.date {
-                            if let Err(e) = self.telegram.send_message(self.cfg.chat_id, event.to_string().as_str()) {
+                            if let Err(e) = self
+                                .telegram
+                                .send_message(self.cfg.chat_id, event.to_string().as_str())
+                            {
                                 eprintln!("domain::service::command:worker: failed to send message while serve Event. Error: {}.", e);
                             } else {
                                 events.remove(key);
                             }
                         }
                     }
-                },
+                }
                 Err(e) => {
                     eprintln!("domain::service::command:worker: failed to get event_mutex lock. Error: {}", e);
                 }

@@ -2,8 +2,7 @@ use std::error::Error;
 use std::fmt;
 
 #[derive(Debug)]
-pub struct DateTimeParseError {
-}
+pub struct DateTimeParseError {}
 
 impl DateTimeParseError {
     pub fn new() -> DateTimeParseError {
@@ -17,5 +16,4 @@ impl fmt::Display for DateTimeParseError {
     }
 }
 
-impl Error for DateTimeParseError {
-}
+impl Error for DateTimeParseError {}

@@ -1,10 +1,12 @@
+use std::ops::Add;
 use crate::app::model::state::State;
-use crate::domain::error::message::UnknownMessageTypeError;
+use crate::domain::error::message::{OffsetFetchError, UnknownMessageTypeError};
 use crate::infrastructure::integration;
 use integration::telegram;
 use integration::telegram::model::Message;
 use std::sync::{mpsc, Arc};
 use std::time::Duration;
+use chrono::Local;
 
 // Poller is a provider part for "provider-consumer" pattern.
 pub trait Poller {
@@ -30,24 +32,32 @@ impl LongPoller {
     }
 }
 impl LongPoller {
-    // returns a new offset (a last msg id + 1)
-    fn query_offset(&self) -> i64 {
-        let response = match self.telegram.get_updates(0) {
-            Ok(r) => r,
-            Err(e) => {
-                eprintln!("{}", e);
-                return 0;
-            }
-        };
+    // returns a new offset or propagated a panic!
+    fn get_offset_with_retries(&self) -> i64 {
+        let threshold = Local::now().naive_local().add(Duration::from_secs(30));
+        while Local::now().naive_local() < threshold {
+            match self.query_offset() {
+                Ok(offset) => return offset,
+                Err(e) => eprintln!("{}", e)
+            };
 
-        let offset: i64;
-        if let Some(l) = response.result.last() {
-            offset = l.update_id + 1;
-        } else {
-            offset = 0;
+            std::thread::sleep(Duration::from_secs(1));
         }
 
-        offset
+        panic!("Failed to query offset, timeout exceeded.");
+    }
+    // returns a new offset (a last msg id + 1)
+    fn query_offset(&self) -> Result<i64, OffsetFetchError> {
+        let response = match self.telegram.get_updates(0) {
+            Ok(response) => response,
+            Err(error) => return Err(OffsetFetchError::new(Some(error))),
+        };
+
+        if let Some(l) = response.result.last() {
+            return Ok(l.update_id + 1);
+        }
+
+        Err(OffsetFetchError::new(None))
     }
     fn extract_msg(
         msg: Option<Message>,
@@ -77,7 +87,7 @@ impl Poller for LongPoller {
             return;
         }
 
-        let mut offset = self.query_offset();
+        let mut offset = self.get_offset_with_retries();
 
         loop {
             match self.telegram.get_updates(offset.clone()) {

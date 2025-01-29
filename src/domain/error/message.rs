@@ -2,8 +2,7 @@ use std::error::Error;
 use std::fmt;
 
 #[derive(Debug)]
-pub struct UnknownMessageTypeError {
-}
+pub struct UnknownMessageTypeError {}
 
 impl UnknownMessageTypeError {
     pub fn new() -> UnknownMessageTypeError {
@@ -17,5 +16,4 @@ impl fmt::Display for UnknownMessageTypeError {
     }
 }
 
-impl Error for UnknownMessageTypeError {
-}
+impl Error for UnknownMessageTypeError {}

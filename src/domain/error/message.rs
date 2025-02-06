@@ -16,7 +16,7 @@ impl fmt::Display for UnknownMessageTypeError {
     }
 }
 
-impl Error for OffsetFetchError {}
+impl Error for UnknownMessageTypeError {}
 
 #[derive(Debug)]
 pub struct OffsetFetchError {

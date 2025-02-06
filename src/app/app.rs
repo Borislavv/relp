@@ -2,7 +2,7 @@ use crate::app::cfg::cfg::Cfg;
 use crate::app::error::kernel::NotBootedKernelError;
 use crate::app::model::state::{AppState, State};
 use crate::domain::factory::command::CommandFactory;
-use crate::domain::model::event::{Event, ExecutableEvent};
+use crate::domain::model::event::ExecutableEvent;
 use crate::domain::service::command;
 use crate::domain::service::command::worker::Worker;
 use crate::domain::service::event::r#loop::{CommandEventLoop, EventLoop};

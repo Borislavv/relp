@@ -34,10 +34,13 @@ impl LongPoller {
 impl LongPoller {
     // returns a new offset or propagated a panic!
     fn get_offset_with_retries(&self) -> i64 {
-        let threshold = Local::now().naive_local().add(Duration::from_secs(30));
+        let threshold = Local::now().naive_local().add(Duration::from_mins(5));
         while Local::now().naive_local() < threshold {
             match self.query_offset() {
-                Ok(offset) => return offset,
+                Ok(offset) => {
+                    println!("Offset has been received, start processing messages...");
+                    return offset;
+                },
                 Err(e) => eprintln!("{}", e)
             };
 
@@ -53,8 +56,19 @@ impl LongPoller {
             Err(error) => return Err(OffsetFetchError::new(Some(error))),
         };
 
+        if !response.ok {
+            return Err(OffsetFetchError::new(None));
+        }
+
+        if response.result.len() == 0 {
+            return Ok(0);
+        }
+
         if let Some(l) = response.result.last() {
             return Ok(l.update_id + 1);
+        } else {
+            let json = serde_json::to_string(&response.result).unwrap();
+            eprintln!("Unknown response from telegram: {}.", json);
         }
 
         Err(OffsetFetchError::new(None))

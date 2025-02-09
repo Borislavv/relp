@@ -3,8 +3,6 @@ use crate::app::error::kernel::NotBootedKernelError;
 use crate::app::model::state::{AppState, State};
 use crate::domain::factory::command::CommandFactory;
 use crate::domain::model::event::ExecutableEvent;
-use crate::domain::service::command;
-use crate::domain::service::command::worker::Worker;
 use crate::domain::service::event::r#loop::{CommandEventLoop, EventLoop};
 use crate::domain::service::executor::executor::{CommandExecutor, Executor};
 use crate::domain::service::runner::runner::{AppRunner, Runner};
@@ -79,16 +77,9 @@ impl App {
             )),
         ));
 
-        let worker: Arc<Box<dyn Worker>> = Arc::new(Box::new(command::worker::CommandWorker::new(
-            cfg.clone(),
-            state,
-            events_mutex,
-            telegram_facade,
-        )));
-
         App {
             is_init: true,
-            app_runner: Box::new(AppRunner::new(cfg, event_loop, worker, provider, consumer)),
+            app_runner: Box::new(AppRunner::new(cfg, event_loop, provider, consumer)),
         }
     }
 }

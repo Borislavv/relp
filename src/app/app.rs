@@ -83,6 +83,7 @@ impl App {
         }
     }
 }
+
 impl Kernel for App {
     fn run(&self) -> Result<(), NotBootedKernelError> {
         if !self.is_init {

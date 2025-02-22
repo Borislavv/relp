@@ -31,7 +31,7 @@ impl Responder for ExitCommandResponder {
                 ```Stdout:\t{}```
                 ```Stderr:\t{}```
                 ```Code:\t{}```",
-                match exit.message {
+                match exit.input_message {
                     Some(msg) => msg.text,
                     None => "".to_string(),
                 },

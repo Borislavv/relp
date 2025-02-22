@@ -6,7 +6,7 @@ use crate::domain::service::executor::executor::Executor;
 use crate::infrastructure::integration;
 use integration::telegram;
 use std::sync::mpsc::Receiver;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 pub trait Consumer: Send + Sync {
     fn consume(&self, ch: Receiver<telegram::model::Message>);

@@ -2,14 +2,18 @@ use crate::app::cfg::cfg::Cfg;
 use crate::app::error::kernel::NotBootedKernelError;
 use crate::app::model::state::{AppState, State};
 use crate::domain::factory::command::CommandFactory;
+use crate::domain::model::command::WifeMessageCmd;
 use crate::domain::model::event::ExecutableEvent;
 use crate::domain::service::event::r#loop::{CommandEventLoop, EventLoop};
 use crate::domain::service::executor::executor::{CommandExecutor, Executor};
 use crate::domain::service::runner::runner::{AppRunner, Runner};
+use crate::domain::service::wife::message::parser::CsvParser;
+use crate::domain::service::wife::message::service::{MessageService, MessageServiceTrait};
 use crate::infrastructure;
 use crate::infrastructure::broadcasting::mpsc::channel::{Chan, Channel};
 use crate::infrastructure::service::executor::responder::ExitCommandResponder;
 use crate::infrastructure::service::message::poller::LongPoller;
+use chrono::{Datelike, Local, NaiveDate, NaiveDateTime};
 use infrastructure::integration::telegram;
 use infrastructure::service::message;
 use std::sync::{Arc, Mutex};
@@ -56,6 +60,18 @@ impl App {
             channel,
             executor.clone(),
         )));
+
+        let now = Local::now().naive_local();
+        let date = NaiveDateTime::from(NaiveDate::from_ymd(now.year(), now.month(), now.day()).and_hms(10, 0, 0));
+        let message_service: Arc<Box<dyn MessageServiceTrait>> = Arc::new(Box::new(MessageService::new(
+            Arc::new(Box::new(CsvParser::new(cfg.clone())
+        ))).unwrap()));
+        event_loop.add_event(Arc::new(Box::new(WifeMessageCmd::new(
+            date.clone(), "С добрым утром малыш, я безумно тебя люблю.".to_string(), message_service.clone(),
+        ))));
+        event_loop.add_event(Arc::new(Box::new(WifeMessageCmd::new(
+            date, "Спокойной ночи, моя любовь, сладких снов.".to_string(), message_service,
+        ))));
 
         let provider: Arc<Mutex<Box<dyn message::provider::Provider>>> =
             Arc::new(Mutex::new(Box::new(LongPoller::new(

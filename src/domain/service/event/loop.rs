@@ -1,5 +1,4 @@
 use crate::app;
-use crate::domain::model::command::Executable;
 use crate::domain::model::event::{Event, ExecutableEvent};
 use crate::domain::r#enum::event::Repeat;
 use crate::domain::service::executor::executor::Executor;
@@ -24,12 +23,7 @@ impl CommandEventLoop {
         channel: Box<dyn Channel<Arc<Box<dyn ExecutableEvent>>>>,
         executor: Arc<Box<dyn Executor>>,
     ) -> Self {
-        Self {
-            state,
-            events: Arc::new(Mutex::new(vec![])),
-            channel,
-            executor,
-        }
+        Self { state, events: Arc::new(Mutex::new(vec![])), channel, executor }
     }
 }
 
@@ -39,12 +33,14 @@ impl CommandEventLoop {
             Repeat::Once => {}
             Repeat::Always => {
                 // return an event back always
-                self.events.lock().unwrap().push(event);
+                // TODO potentially memory licking (arc or mutex can handle links permanently)
+                self.events.lock().unwrap().push(Arc::new(Box::new(event.clone())));
             }
             Repeat::Times(n) => {
                 if n > 0 {
                     // return an event back N times
-                    self.events.lock().unwrap().push(event);
+                    // TODO potentially memory licking (arc or mutex can handle links permanently)
+                    self.events.lock().unwrap().push(Arc::new(Box::new(event.clone())));
                 }
             }
         }
@@ -72,7 +68,7 @@ impl EventLoop for CommandEventLoop {
                         Some(readyEvent) => {
                             // unwrap is safe if you do not have a failures in another thread which consume
                             // from receiver
-                            readyEvent.send(event.clone()).unwrap();
+                            readyEvent.send(Arc::new(Box::new(event.clone()))).unwrap();
                             // back event to the heap if necessary
                             self.handle_event_repeats(event);
                         }
@@ -87,10 +83,7 @@ impl EventLoop for CommandEventLoop {
                                 Err(e) => {
                                     let name = event.name().to_string();
                                     self.events.lock().unwrap().push(event);
-                                    println!(
-                                        "Error: {} occurred while execution command: {}.",
-                                        e, name
-                                    )
+                                    println!("Error: {} occurred while execution command: {}.", e, name)
                                 }
                             };
                         }

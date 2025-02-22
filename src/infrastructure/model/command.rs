@@ -24,15 +24,15 @@ pub struct Exit {
     pub code: i32,
     pub stdout: String,
     pub stderr: String,
-    pub message: Option<Message>,
+    pub input_message: Option<Message>,
 }
 impl Exit {
-    pub fn new(code: i32, stdout: String, stderr: String, message: Option<Message>) -> Self {
+    pub fn new(code: i32, stdout: String, stderr: String, input_message: Option<Message>) -> Self {
         Self {
             code,
             stdout,
             stderr,
-            message,
+            input_message,
         }
     }
 }

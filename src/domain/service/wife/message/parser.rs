@@ -31,8 +31,10 @@ impl MessageParser for CsvParser {
         for (i, result) in reader.records().enumerate() {
             match result {
                 Ok(record) => {
-                    if let Some(str) = record.get(i) {
+                    if let Some(str) = record.get(0) {
                         messages.push(Message::new(str.to_string()))
+                    } else {
+                        println!("failed to parse record {}", i);
                     }
                 },
                 Err(e) => return Err(Box::new(e)),

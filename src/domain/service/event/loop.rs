@@ -60,14 +60,12 @@ impl EventLoop for CommandEventLoop {
                 return;
             }
 
-            // (vec![]).drain(0..) -> removes all elements from vector, if an event is not
-            // ready, you need put it back
+            // (vec![]).drain(0..) -> removes all elements from vector, if an event is not ready, you need put it back
             for event in self.events.lock().unwrap().drain(0..) {
                 if event.is_ready() {
                     match event.sender() {
                         Some(ready_event) => {
-                            // unwrap is safe if you do not have a failures in another thread which consume
-                            // from receiver
+                            // unwrap is safe if you do not have a failures in another thread which consume from receiver
                             ready_event.send(event.clone()).unwrap();
                             // back event to the heap if necessary
                             self.handle_event_repeats(event);

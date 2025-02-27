@@ -4,6 +4,7 @@ use std::time::Duration;
 #[derive(Clone)]
 pub struct Cfg {
     pub chat_id: u64,
+    pub wife_chat_id: u64,
     pub token: String,
     pub poll_frequency: Duration,
     pub wife_filepath: String,
@@ -14,11 +15,15 @@ impl Cfg {
     pub fn new() -> Result<Self, env::VarError> {
         let s = Self {
             chat_id: env::var("TG_CHAT_ID")
-                .unwrap_or("1063099947".to_string())
+                .unwrap_or("{telegram_bot_your_chat_id}".to_string())
+                .parse::<u64>()
+                .unwrap(),
+            wife_chat_id: env::var("TG_CHAT_ID")
+                .unwrap_or("{telegram_bot_wife_chat_id}".to_string())
                 .parse::<u64>()
                 .unwrap(),
             token: env::var("TG_TOKEN")
-                .unwrap_or("8124548645:AAE-3yG8AZTmZRvB5Y0K8qhuVopLhsSFYE0".to_string()),
+                .unwrap_or("{telegram_bot_api_token}".to_string()),
             poll_frequency: Duration::from_secs(
                 env::var("TG_POLL_FREQUENCY_SEC")
                     .unwrap_or("5".to_string())

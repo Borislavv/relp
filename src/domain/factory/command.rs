@@ -1,5 +1,5 @@
 use crate::domain::model::command::{
-    Event, EventCmd, ExecCmd, Executable, NotFoundCmd, Note, NoteCmd, PingCmd,
+    Event, EventCmd, ExecCmd, NotFoundCmd, Note, NoteCmd, PingCmd,
 };
 use crate::domain::model::event::ExecutableEvent;
 use crate::domain::r#enum::command::Type;

@@ -17,6 +17,11 @@ use chrono::{Datelike, Local, NaiveDate, NaiveDateTime};
 use infrastructure::integration::telegram;
 use infrastructure::service::message;
 use std::sync::{Arc, Mutex};
+use rust_embed::RustEmbed;
+
+#[derive(RustEmbed)]
+#[folder = "src/app/data"]
+pub struct DataDir;
 
 pub trait Kernel {
     fn run(&self) -> Result<(), NotBootedKernelError>;
@@ -53,8 +58,9 @@ impl App {
             ExitCommandResponder::new(cfg.clone(), telegram_facade.clone()),
         ))));
 
+        let chan: Chan<Arc<Box<dyn ExecutableEvent>>> = Chan::new();
         let state: Arc<Box<dyn State>> = Arc::new(Box::new(AppState::new()));
-        let channel: Box<dyn Channel<Arc<Box<dyn ExecutableEvent>>>> = Box::new(Chan::new());
+        let channel: Box<dyn Channel<Arc<Box<dyn ExecutableEvent>>>> = Box::new(chan);
         let event_loop: Arc<Box<dyn EventLoop>> = Arc::new(Box::new(CommandEventLoop::new(
             state.clone(),
             channel,
@@ -62,7 +68,7 @@ impl App {
         )));
 
         let now = Local::now().naive_local();
-        let date = NaiveDateTime::from(NaiveDate::from_ymd(now.year(), now.month(), now.day()).and_hms(10, 0, 0));
+        let date = NaiveDateTime::from(NaiveDate::from_ymd_opt(now.year(), now.month(), now.day()).unwrap().and_hms_opt(10, 0, 0).unwrap());
         let message_service: Arc<Box<dyn MessageServiceTrait>> = Arc::new(Box::new(MessageService::new(
             Arc::new(Box::new(CsvParser::new(cfg.clone())
         ))).unwrap()));

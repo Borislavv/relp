@@ -11,6 +11,7 @@ use std::sync::atomic::AtomicI64;
 use std::sync::atomic::Ordering::SeqCst;
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
+use crate::domain::r#enum::exit_code::ExitCode;
 use crate::domain::service::wife::message::service::MessageServiceTrait;
 
 pub trait Executable {
@@ -38,7 +39,7 @@ impl Executable for PingCmd {
             msg = "ping".to_string();
         }
 
-        Exit::new(0, msg, "".to_string(), None)
+        Exit::new(ExitCode::Success, msg, "".to_string(), None)
     }
 }
 impl model::event::Event for PingCmd {
@@ -70,7 +71,7 @@ impl WifeMessageCmd {
 }
 impl Executable for WifeMessageCmd {
     fn exec(&self) -> Exit {
-        Exit::new(0, self.service.get_rand().text + self.postfix.as_str(), "".to_string(), None)
+        Exit::new(ExitCode::Wife, self.service.get_rand().text + self.postfix.as_str(), "".to_string(), None)
     }
 }
 impl model::event::Event for WifeMessageCmd {
@@ -109,7 +110,7 @@ impl Executable for ExecCmd {
 
         if cmd_parts.len() == 0 {
             return Exit::new(
-                3,
+                ExitCode::Failed,
                 "".to_string(),
                 "The command is empty, please check the send data and try again.".to_string(),
                 None,
@@ -123,13 +124,13 @@ impl Executable for ExecCmd {
 
         match output {
             Ok(output) => Exit::new(
-                output.status.code().unwrap(),
+                ExitCode::Other(output.status.code().unwrap()),
                 String::from_utf8(output.stdout).unwrap(),
                 String::from_utf8(output.stderr).unwrap(),
                 Some(self.cmd.message.clone()),
             ),
             Err(error) => Exit::new(
-                1,
+                ExitCode::Failed,
                 "".to_string(),
                 error.to_string(),
                 Some(self.cmd.message.clone()),
@@ -171,10 +172,10 @@ impl Executable for NoteCmd {
                 .lock()
                 .unwrap()
                 .push(Note::new(self.cmd.str.clone()));
-            Exit::new(0, "Successfully added.".to_string(), "".to_string(), msg)
+            Exit::new(ExitCode::Success, "Successfully added.".to_string(), "".to_string(), msg)
         } else {
             Exit::new(
-                0,
+                ExitCode::Success,
                 self.list
                     .lock()
                     .unwrap()
@@ -220,7 +221,7 @@ impl EventCmd {
                 Ok(datetime) => datetime,
                 Err(err) => {
                     let exit = Some(Exit::new(
-                        1,
+                        ExitCode::Failed,
                         "".to_string(),
                         err.to_string(),
                         Some(cmd.message.clone()),
@@ -244,7 +245,7 @@ impl Executable for EventCmd {
         if self.cmd.str != String::new() {
             let datetime = match parse_yyyy_mm_dd_hm_from_str(self.cmd.str.clone().as_str()) {
                 Ok(datetime) => datetime,
-                Err(err) => return Exit::new(1, "".to_string(), err.to_string(), msg),
+                Err(err) => return Exit::new(ExitCode::Failed, "".to_string(), err.to_string(), msg),
             };
 
             self.list
@@ -279,7 +280,7 @@ impl Executable for EventCmd {
             };
 
             Exit::new(
-                0,
+                ExitCode::Success,
                 format!(
                     "[{}] Successfully added and will be triggerred in{}{}{}{}.",
                     Local::now().naive_local().format("%Y-%m-%dT%H:%M"),
@@ -303,7 +304,7 @@ impl Executable for EventCmd {
             });
 
             Exit::new(
-                0,
+                ExitCode::Success,
                 self.list
                     .lock()
                     .unwrap()
@@ -345,7 +346,7 @@ impl NotFoundCmd {
 impl Executable for NotFoundCmd {
     fn exec(&self) -> Exit {
         Exit::new(
-            2,
+            ExitCode::Failed,
             "".to_string(),
             format!("Command `{}` not found.", self.cmd.str).to_string(),
             None,

@@ -1,5 +1,5 @@
 use crate::app;
-use crate::domain::model::event::{Event, ExecutableEvent};
+use crate::domain::model::event::ExecutableEvent;
 use crate::domain::r#enum::event::Repeat;
 use crate::domain::service::executor::executor::Executor;
 use crate::infrastructure::broadcasting::mpsc::channel::Channel;
@@ -34,13 +34,13 @@ impl CommandEventLoop {
             Repeat::Always => {
                 // return an event back always
                 // TODO potentially memory licking (arc or mutex can handle links permanently)
-                self.events.lock().unwrap().push(Arc::new(Box::new(event.clone())));
+                self.events.lock().unwrap().push(event.clone());
             }
             Repeat::Times(n) => {
                 if n > 0 {
                     // return an event back N times
                     // TODO potentially memory licking (arc or mutex can handle links permanently)
-                    self.events.lock().unwrap().push(Arc::new(Box::new(event.clone())));
+                    self.events.lock().unwrap().push(event.clone());
                 }
             }
         }
@@ -65,10 +65,10 @@ impl EventLoop for CommandEventLoop {
             for event in self.events.lock().unwrap().drain(0..) {
                 if event.is_ready() {
                     match event.sender() {
-                        Some(readyEvent) => {
+                        Some(ready_event) => {
                             // unwrap is safe if you do not have a failures in another thread which consume
                             // from receiver
-                            readyEvent.send(Arc::new(Box::new(event.clone()))).unwrap();
+                            ready_event.send(event.clone()).unwrap();
                             // back event to the heap if necessary
                             self.handle_event_repeats(event);
                         }

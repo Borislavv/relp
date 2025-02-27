@@ -7,6 +7,7 @@ use integration::telegram::model::Message;
 use std::sync::{mpsc, Arc};
 use std::time::Duration;
 use chrono::Local;
+use crate::app::cfg::cfg::Cfg;
 
 // Poller is a provider part for "provider-consumer" pattern.
 pub trait Poller {
@@ -14,17 +15,20 @@ pub trait Poller {
 }
 
 pub struct LongPoller {
+    cfg: Cfg,
     freq: Duration,
     state: Arc<Box<dyn State>>,
     telegram: Arc<Box<dyn telegram::facade::TelegramFacadeTrait>>,
 }
 impl LongPoller {
     pub fn new(
+        cfg: Cfg,
         freq: Duration,
         state: Arc<Box<dyn State>>,
         telegram: Arc<Box<dyn telegram::facade::TelegramFacadeTrait>>,
     ) -> Self {
         LongPoller {
+            cfg,
             freq,
             state,
             telegram,
@@ -94,6 +98,23 @@ impl LongPoller {
             Err(UnknownMessageTypeError::new())
         }
     }
+    fn is_must_be_skipped(
+        &self,
+        msg: Option<Message>,
+        edited_msg: Option<Message>,
+    ) -> bool {
+        if let Some(message) = msg {
+            if self.cfg.chat_id != u64::try_from(message.chat.id).unwrap() {
+                return true;
+            }
+        }
+        if let Some(message) = edited_msg {
+            if self.cfg.chat_id != u64::try_from(message.chat.id).unwrap() {
+                return true;
+            }
+        }
+        false
+    }
 }
 impl Poller for LongPoller {
     fn poll(&self, out: mpsc::SyncSender<Message>) {
@@ -107,12 +128,15 @@ impl Poller for LongPoller {
             match self.telegram.get_updates(offset.clone()) {
                 Ok(r) => {
                     for update in r.result {
-                        // joining of message and edited message
-                        // (will be selected just one of which is not None)
-                        let msg = Self::extract_msg(update.message, update.edited_message).unwrap();
+                        // handle messages just from myself
+                        if !self.is_must_be_skipped(update.message.clone(), update.edited_message.clone()) {
+                            // joining of message and edited message
+                            // (will be selected just one of which is not None)
+                            let msg = Self::extract_msg(update.message, update.edited_message).unwrap();
 
-                        // send the message to the other side
-                        out.send(msg).unwrap();
+                            // send the message to the other side
+                            out.send(msg).unwrap();
+                        }
 
                         // calculate a new offset
                         offset = update.update_id + 1;

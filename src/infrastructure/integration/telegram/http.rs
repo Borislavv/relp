@@ -40,8 +40,7 @@ impl HttpClient for Client {
     fn get_updates(&self, offset: i64) -> Result<Response, Error> {
         ReqwestClient::builder()
             .timeout(self.timeout)
-            .build()
-            .unwrap()
+            .build()?
             .get(format!(
                 "{}/bot{}/{}?offset={}",
                 TELEGRAM_API_URL, self.token, TELEGRAM_API_FETCH_MESSAGES_METHOD, offset

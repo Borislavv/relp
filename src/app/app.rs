@@ -81,6 +81,7 @@ impl App {
 
         let provider: Arc<Mutex<Box<dyn message::provider::Provider>>> =
             Arc::new(Mutex::new(Box::new(LongPoller::new(
+                cfg.clone(),
                 frequency_cloned,
                 state.clone(),
                 telegram_facade.clone(),

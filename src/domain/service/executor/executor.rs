@@ -1,4 +1,3 @@
-use crate::domain::model::command::Executable;
 use crate::domain::model::event::ExecutableEvent;
 use crate::infrastructure::service::executor::responder::Responder;
 use std::error::Error;

@@ -73,7 +73,7 @@ impl App {
             Arc::new(Box::new(CsvParser::new(cfg.clone())
         ))).unwrap()));
         event_loop.add_event(Arc::new(Box::new(WifeMessageCmd::new(
-            date.clone(), "С добрым утром малыш, я безумно тебя люблю.".to_string(), message_service.clone(),
+            date.clone(), "С добрым утром моя радость, я безумно тебя люблю.".to_string(), message_service.clone(),
         ))));
         event_loop.add_event(Arc::new(Box::new(WifeMessageCmd::new(
             date, "Спокойной ночи, моя любовь, сладких снов.".to_string(), message_service,

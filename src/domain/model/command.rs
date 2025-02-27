@@ -3,10 +3,9 @@ use crate::domain::model::event::ExecutableEvent;
 use crate::domain::r#enum::event::Repeat;
 use crate::infrastructure::helper::date::parse_yyyy_mm_dd_hm_from_str;
 use crate::infrastructure::model::command::{Command, Exit};
-use chrono::{Datelike, Duration, Local, NaiveDate, NaiveDateTime, NaiveTime, Timelike};
+use chrono::{Datelike, Local, NaiveDateTime, Timelike};
 use shlex::split;
 use std::cmp::Ordering;
-use std::ops::Add;
 use std::process::Command as OsCmd;
 use std::sync::atomic::AtomicI64;
 use std::sync::atomic::Ordering::SeqCst;
@@ -52,12 +51,6 @@ impl model::event::Event for PingCmd {
     fn repeats(&self) -> Repeat {
         Repeat::Times(self.atm.load(SeqCst))
     }
-    fn from_self(&self) -> Self {
-        Self {
-            cmd: self.cmd.clone(),
-            atm: AtomicI64::new(self.atm.load(SeqCst)),
-        }
-    }
 }
 impl ExecutableEvent for PingCmd {
     fn sender(&self) -> Option<Arc<Sender<Arc<Box<dyn ExecutableEvent>>>>> {
@@ -93,13 +86,6 @@ impl model::event::Event for WifeMessageCmd {
     }
     fn repeats(&self) -> Repeat {
         Repeat::Always
-    }
-    fn from_self(&self) -> Self {
-        Self {
-            postfix: self.postfix.clone(),
-            service: self.service.clone(),
-            date: self.date + Duration::days(1),
-        }
     }
 }
 impl ExecutableEvent for WifeMessageCmd {
@@ -161,11 +147,6 @@ impl model::event::Event for ExecCmd {
     fn repeats(&self) -> Repeat {
         Repeat::Once
     }
-    fn from_self(&self) -> Self {
-        Self {
-            cmd: self.cmd.clone(),
-        }
-    }
 }
 impl ExecutableEvent for ExecCmd {
     fn sender(&self) -> Option<Arc<Sender<Arc<Box<dyn ExecutableEvent>>>>> {
@@ -216,12 +197,6 @@ impl model::event::Event for NoteCmd {
     }
     fn repeats(&self) -> Repeat {
         Repeat::Once
-    }
-    fn from_self(&self) -> Self {
-        Self {
-            cmd: self.cmd.clone(),
-            list: self.list.clone(),
-        }
     }
 }
 impl ExecutableEvent for NoteCmd {
@@ -352,14 +327,6 @@ impl model::event::Event for EventCmd {
     fn repeats(&self) -> Repeat {
         Repeat::Once
     }
-    fn from_self(&self) -> Self {
-        Self {
-            cmd: self.cmd.clone(),
-            list: self.list.clone(),
-            date: self.date,
-            exit: None,
-        }
-    }
 }
 impl ExecutableEvent for EventCmd {
     fn sender(&self) -> Option<Arc<Sender<Arc<Box<dyn ExecutableEvent>>>>> {
@@ -394,11 +361,6 @@ impl model::event::Event for NotFoundCmd {
     }
     fn repeats(&self) -> Repeat {
         Repeat::Once
-    }
-    fn from_self(&self) -> Self {
-        Self {
-            cmd: self.cmd.clone(),
-        }
     }
 }
 impl ExecutableEvent for NotFoundCmd {

@@ -1,37 +1,43 @@
-use crate::app::cfg::cfg::Cfg;
 use crate::domain::model::wife::Message;
-use csv::ReaderBuilder;
+use csv::{Reader, ReaderBuilder};
 use std::error::Error;
+use crate::app::app::DataDir;
+use crate::app::cfg::cfg::Cfg;
+use crate::domain::error::wife::WifeMessageIsNoneError;
 
 pub trait MessageParser: Send + Sync {
     fn parse(&self) -> Result<Vec<Message>, Box<dyn Error>>;
 }
 
 pub struct CsvParser {
-    filepath: String,
+    cfg: Cfg
 }
 
 impl CsvParser {
     pub fn new(cfg: Cfg) -> Self {
-        Self {
-            filepath: cfg.wife_filepath,
-        }
+        Self { cfg }
     }
 }
 
 impl MessageParser for CsvParser {
     fn parse(&self) -> Result<Vec<Message>, Box<dyn Error>> {
+        let file = DataDir::get(self.cfg.wife_filepath.as_str()).unwrap();
+
         let mut reader = ReaderBuilder::new()
             .has_headers(false)
-            .from_path(&self.filepath)?;
+            .from_reader(file.data.as_ref());
 
         let mut messages: Vec<Message> = Vec::new();
 
-        for result in reader.deserialize() {
+        for (i, result) in reader.records().enumerate() {
             match result {
-                Ok(text) => messages.push(Message::new(text)),
+                Ok(record) => {
+                    if let Some(str) = record.get(i) {
+                        messages.push(Message::new(str.to_string()))
+                    }
+                },
                 Err(e) => return Err(Box::new(e)),
-            };
+            }
         }
 
         Ok(messages)

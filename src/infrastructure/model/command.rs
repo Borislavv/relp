@@ -1,4 +1,5 @@
 use crate::domain::r#enum::command::Type;
+use crate::domain::r#enum::exit_code::ExitCode;
 use crate::infrastructure::integration::telegram::model::Message;
 
 pub const DATE_FORMAT: &str = "%Y-%m-%d %H:%M:%S";
@@ -21,13 +22,13 @@ impl Command {
 
 #[derive(Debug)]
 pub struct Exit {
-    pub code: i32,
+    pub code: ExitCode,
     pub stdout: String,
     pub stderr: String,
     pub input_message: Option<Message>,
 }
 impl Exit {
-    pub fn new(code: i32, stdout: String, stderr: String, input_message: Option<Message>) -> Self {
+    pub fn new(code: ExitCode, stdout: String, stderr: String, input_message: Option<Message>) -> Self {
         Self {
             code,
             stdout,

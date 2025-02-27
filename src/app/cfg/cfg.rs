@@ -26,7 +26,7 @@ impl Cfg {
                     .unwrap(),
             ),
             wife_filepath: env::var("WIFE_FILE_PATH")
-                .unwrap_or("app/data/beloved_wife.csv".to_string()),
+                .unwrap_or("beloved_wife.csv".to_string()),
             is_wife_mode_enabled: env::var("IS_WIFE_MODE_ENABLED").unwrap_or("false".to_string())
                 == "true",
             event_loop_channel_capacity: env::var("EVENT_LOOP_CHANNEL_CAPACITY")

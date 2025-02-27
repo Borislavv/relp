@@ -1,9 +1,8 @@
 use crate::domain::model::wife::Message;
-use csv::{Reader, ReaderBuilder};
+use csv::ReaderBuilder;
 use std::error::Error;
 use crate::app::app::DataDir;
 use crate::app::cfg::cfg::Cfg;
-use crate::domain::error::wife::WifeMessageIsNoneError;
 
 pub trait MessageParser: Send + Sync {
     fn parse(&self) -> Result<Vec<Message>, Box<dyn Error>>;

@@ -1,7 +1,6 @@
 use std::error::Error;
 use std::sync::{Arc, Mutex, MutexGuard};
 use rand::Rng;
-use rand::seq::IndexedRandom;
 use crate::domain::error::wife::WifeMessagesVecIsEmptyError;
 use crate::domain::model::wife::Message;
 use crate::domain::service::wife::message::parser::MessageParser;
@@ -30,7 +29,7 @@ impl MessageService {
 }
 impl MessageServiceTrait for MessageService {
     fn get_rand(&self) -> Message {
-        let mut vec: MutexGuard<Vec<Message>> = self.messages.lock().unwrap();
+        let vec: MutexGuard<Vec<Message>> = self.messages.lock().unwrap();
 
         let mut rng = rand::rng();
         let random = rng.random::<i32>() as usize;

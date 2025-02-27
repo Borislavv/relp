@@ -32,10 +32,8 @@ impl MessageServiceTrait for MessageService {
         let vec: MutexGuard<Vec<Message>> = self.messages.lock().unwrap();
 
         let mut rng = rand::rng();
-        let random = rng.random::<i32>() as usize;
+        let random_index = rng.random_range(0..vec.len());
 
-        let m: Message = vec[random].clone();
-
-        m
+        vec[random_index].clone()
     }
 }

@@ -51,7 +51,7 @@ impl<T: Send + Sync + Clone> Channel<T> for Chan<T> {
 
     fn send(&self, key: Option<String>, data: T) -> Result<(), SendOnClosedChannelError> {
         if let Some(key) = key {
-            let mut map = self.map.lock().unwrap();
+            let map = self.map.lock().unwrap();
             let sender = map.get(&key).unwrap();
             if let Err(e) = sender.send(data.clone()) {
                 return Err(SendOnClosedChannelError::new(e.to_string()));
@@ -72,7 +72,7 @@ impl<T: Send + Sync + Clone> Channel<T> for Chan<T> {
     }
 
     fn sender(&self, key: Option<String>) -> Result<Vec<Arc<Sender<T>>>, NoEntryWasFoundError> {
-        let mut map = self.map.lock().unwrap();
+        let map = self.map.lock().unwrap();
 
         if let Some(key) = key {
             if !map.contains_key(&key) {

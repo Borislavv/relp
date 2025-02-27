@@ -2,11 +2,10 @@ use crate::app::model::state::State;
 use crate::domain::factory::command::Factoryer;
 use crate::domain::model::event::ExecutableEvent;
 use crate::domain::service::event::r#loop::EventLoop;
-use crate::domain::service::executor::executor::Executor;
 use crate::infrastructure::integration;
 use integration::telegram;
 use std::sync::mpsc::Receiver;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 pub trait Consumer: Send + Sync {
     fn consume(&self, ch: Receiver<telegram::model::Message>);

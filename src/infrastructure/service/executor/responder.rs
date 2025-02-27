@@ -27,7 +27,7 @@ impl Responder for ExitCommandResponder {
     fn respond(&self, exit: Exit) -> Result<(), Box<dyn Error>> {
         if exit.code == ExitCode::Wife {
             match self.telegram.send_message(
-                self.cfg.chat_id,
+                self.cfg.wife_chat_id,
                 format!("{}", exit.stdout.as_str()).as_str()
             ) {
                 Ok(_) => Ok(()),

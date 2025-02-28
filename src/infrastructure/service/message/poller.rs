@@ -38,7 +38,7 @@ impl LongPoller {
 impl LongPoller {
     // returns a new offset or propagated a panic!
     fn get_offset_with_retries(&self) -> i64 {
-        let threshold = Local::now().naive_local().add(Duration::from_mins(5));
+        let threshold = Local::now().naive_local().add(chrono::Duration::seconds(self.freq.as_secs() as i64));
         while Local::now().naive_local() < threshold {
             match self.query_offset() {
                 Ok(offset) => {

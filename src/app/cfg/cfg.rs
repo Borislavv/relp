@@ -15,15 +15,15 @@ impl Cfg {
     pub fn new() -> Result<Self, env::VarError> {
         let s = Self {
             chat_id: env::var("TG_CHAT_ID")
-                .unwrap_or("{telegram_bot_your_chat_id}".to_string())
+                .unwrap_or("".to_string())
                 .parse::<u64>()
                 .unwrap(),
-            wife_chat_id: env::var("TG_CHAT_ID")
-                .unwrap_or("{telegram_bot_wife_chat_id}".to_string())
+            wife_chat_id: env::var("TG_WIFE_CHAT_ID")
+                .unwrap_or("".to_string())
                 .parse::<u64>()
                 .unwrap(),
             token: env::var("TG_TOKEN")
-                .unwrap_or("{telegram_bot_api_token}".to_string()),
+                .unwrap_or("".to_string()),
             poll_frequency: Duration::from_secs(
                 env::var("TG_POLL_FREQUENCY_SEC")
                     .unwrap_or("5".to_string())

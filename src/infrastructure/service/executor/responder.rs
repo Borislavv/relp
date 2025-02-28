@@ -30,8 +30,14 @@ impl Responder for ExitCommandResponder {
                 self.cfg.wife_chat_id,
                 format!("{}", exit.stdout.as_str()).as_str()
             ) {
-                Ok(_) => Ok(()),
-                Err(e) => Err(e),
+                Ok(_) => {
+                    println!("Successfully sent wife-chat message: {}.", exit.stdout.as_str());
+                    Ok(())
+                },
+                Err(e) => {
+                    println!("Failed to send wife-chat message: {}.", e.to_string());
+                    Err(e)
+                },
             }
         } else {
             match self.telegram.send_message(
@@ -50,12 +56,19 @@ impl Responder for ExitCommandResponder {
                     match exit.code {
                         ExitCode::Success => 0,
                         ExitCode::Failed => 1,
+                        ExitCode::Other(code) => code,
                         _ => panic!("undefined exit code")
                     },
                 ).as_str(),
             ) {
-                Ok(_) => Ok(()),
-                Err(e) => Err(e),
+                Ok(_) => {
+                    println!("Successfully response message: stdout: {}, stderr: {}.", exit.stdout.as_str(), exit.stderr.as_str());
+                    Ok(())
+                },
+                Err(e) => {
+                    println!("Failed to response message: {}.", e.to_string());
+                    Err(e)
+                },
             }
         }
     }
